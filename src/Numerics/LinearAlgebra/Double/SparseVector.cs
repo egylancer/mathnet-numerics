@@ -1,9 +1,11 @@
-﻿// <copyright file="DenseVector.cs" company="Math.NET">
+﻿// <copyright file="SparseVector.cs" company="Math.NET">
 // Math.NET Numerics, part of the Math.NET Project
 // http://numerics.mathdotnet.com
 // http://github.com/mathnet/mathnet-numerics
 // http://mathnetnumerics.codeplex.com
+//
 // Copyright (c) 2009-2010 Math.NET
+//
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
 // files (the "Software"), to deal in the Software without
@@ -12,8 +14,10 @@
 // copies of the Software, and to permit persons to whom the
 // Software is furnished to do so, subject to the following
 // conditions:
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,18 +33,34 @@ namespace MathNet.Numerics.LinearAlgebra.Double
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using Distributions;
     using NumberTheory;
     using Properties;
     using Threading;
 
-    /// <summary>
-    /// A vector using dense storage.
-    /// </summary>
-    public class DenseVector : Vector
+    public class SparseVector : Vector
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="DenseVector"/> class with a given size.
+        ///  Gets the vector's internal data. The array containing the actual values; only the non-zero values are stored.
+        /// </summary>
+        private double[] NonZeroValues = new double[0];
+
+        /// <summary>
+        /// The indices of the non-zero entries.
+        /// </summary>
+        private int[] NonZeroIndices = new int[0];
+        /// <summary>
+        /// Returns the number of non zero elements in the vector.
+        /// </summary>
+        /// <value>The number of non zero elements.</value>
+        public int NonZerosCount
+        {
+            get;
+            private set;
+        }
+
+        #region Constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SparseVector"/> class with a given size.
         /// </summary>
         /// <param name="size">
         /// the size of the vector.
@@ -48,14 +68,10 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <exception cref="ArgumentException">
         /// If <paramref name="size"/> is less than one.
         /// </exception>
-        public DenseVector(int size)
-            : base(size)
-        {
-            this.Data = new double[size];
-        }
+        public SparseVector(int size) : base(size) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DenseVector"/> class with a given size
+        /// Initializes a new instance of the <see cref="SparseVector"/> class with a given size
         /// and each element set to the given value;
         /// </summary>
         /// <param name="size">
@@ -67,108 +83,82 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <exception cref="ArgumentException">
         /// If <paramref name="size"/> is less than one.
         /// </exception>
-        public DenseVector(int size, double value)
-            : this(size)
+        public SparseVector(int size, double value) : this(size)
         {
-            for (var index = 0; index < this.Data.Length; index++)
-            {
-                this.Data[index] = value;
-            }
+            if (value == 0.0) //Skip adding values 
+                return;
+
+            // We already know that this vector is "full", let's allocate all needed memory
+            NonZeroValues = new double[size];
+            NonZeroIndices = new int[size];
+            NonZerosCount = size;
+
+            CommonParallel.For(
+                0,
+                this.Count,
+                index =>
+                {
+                    NonZeroValues[index] = value;
+                    NonZeroIndices[index] = index;
+                }); 
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DenseVector"/> class by
+        /// Initializes a new instance of the <see cref="SparseVector"/> class by
         /// copying the values from another.
         /// </summary>
         /// <param name="other">
         /// The vector to create the new vector from.
         /// </param>
-        public DenseVector(Vector other)
-            : this(other.Count)
+        public SparseVector(Vector other) : this(other.Count)
         {
-            var vector = other as DenseVector;
+            var vector = other as SparseVector;
             if (vector == null)
             {
-                CommonParallel.For(
-                    0, 
-                    this.Data.Length, 
-                    index => this[index] = other[index]);
+                for (int i = 0; i < other.Count; i++ )
+                    this[i] = other[i]; 
             }
             else
             {
-                Buffer.BlockCopy(vector.Data, 0, this.Data, 0, this.Data.Length * Constants.SizeOfDouble);
+                NonZeroValues = new double[vector.NonZerosCount];
+                NonZeroIndices = new int[vector.NonZerosCount];
+                NonZerosCount = vector.NonZerosCount;
+
+                // Lets copy only needed data. Portion of needed data is determined by NonZerosCount value
+                Buffer.BlockCopy(vector.NonZeroValues, 0, this.NonZeroValues, 0, vector.NonZerosCount * Constants.SizeOfDouble);
+                Buffer.BlockCopy(vector.NonZeroIndices, 0, this.NonZeroIndices, 0, vector.NonZerosCount * Constants.SizeOfInt);
             }
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DenseVector"/> class by
+        /// Initializes a new instance of the <see cref="SparseVector"/> class by
         /// copying the values from another.
         /// </summary>
         /// <param name="other">
         /// The vector to create the new vector from.
         /// </param>
-        public DenseVector(DenseVector other)
-            : this(other.Count)
+        public SparseVector(SparseVector other) : this(other.Count)
         {
-            Buffer.BlockCopy(other.Data, 0, this.Data, 0, this.Data.Length * Constants.SizeOfDouble);
+            // Lets copy only needed data. Portion of needed data is determined by NonZerosCount value
+            NonZeroValues = new double[other.NonZerosCount];
+            NonZeroIndices = new int[other.NonZerosCount];
+            NonZerosCount = other.NonZerosCount;
+
+            Buffer.BlockCopy(other.NonZeroValues, 0, this.NonZeroValues, 0, other.NonZerosCount * Constants.SizeOfDouble);
+            Buffer.BlockCopy(other.NonZeroIndices, 0, this.NonZeroIndices, 0, other.NonZerosCount * Constants.SizeOfInt);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DenseVector"/> class for an array.
+        /// Initializes a new instance of the <see cref="SparseVector"/> class for an array.
         /// </summary>
         /// <param name="array">The array to create this vector from.</param>
-        /// <remarks>The vector does not copy the array, but keeps a reference to it. Any 
-        /// changes to the vector will also change the array.</remarks>
-        public DenseVector(double[] array) : base(array.Length)
+        /// <remarks>The vector copy the array. Any changes to the vector will NOT change the array.</remarks>
+        public SparseVector(double[] array) : this(array.Length)
         {
-            this.Data = array;
+            for (int i = 0; i < array.Length; i++ )
+                this[i] = array[i]; 
         }
-
-        /// <summary>
-        ///  Gets the vector's internal data.
-        /// </summary>
-        /// <value>The vector's internal data.</value>
-        /// <remarks>Changing values in the array also changes the corresponding value in vector. Use with care.</remarks>
-        internal double[] Data
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// Returns a reference to the internal data structure.
-        /// </summary>
-        /// <param name="vector">The DenseVector whose internal data we are
-        /// returning.</param>
-        /// <returns>
-        /// A reference to the internal date of the given vector.
-        /// </returns>
-        public static implicit operator double[](DenseVector vector)
-        {
-            if (vector == null)
-            {
-                throw new ArgumentNullException();
-            }
-
-            return vector.Data;
-        }
-
-        /// <summary>
-        /// Returns a vector bound directly to a reference of the provided array.
-        /// </summary>
-        /// <param name="array">The array to bind to the DenseVector object.</param>
-        /// <returns>
-        /// A DenseVector whose values are bound to the given array.
-        /// </returns>
-        public static implicit operator DenseVector(double[] array)
-        {
-            if (array == null)
-            {
-                throw new ArgumentNullException();
-            }
-
-            return new DenseVector(array);
-        }
+        #endregion
 
         /// <summary>
         /// Create a matrix based on this vector in column form (one single column).
@@ -176,13 +166,13 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <returns>This vector as a column matrix.</returns>
         public override Matrix ToColumnMatrix()
         {
-            var matrix = new DenseMatrix(this.Count, 1);
-            for (var i = 0; i < this.Data.Length; i++)
-            {
-                matrix[i, 0] = this.Data[i];
-            }
-
-            return matrix;
+            throw new NotImplementedException();
+            //var matrix = new SparseMatrix(this.Count, 1);
+            //CommonParallel.For(
+            //         0,
+            //         this.Count,
+            //         index => matrix[i, 0] = vector[index]); 
+            //return matrix;
         }
 
         /// <summary>
@@ -191,15 +181,16 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <returns>This vector as a row matrix.</returns>
         public override Matrix ToRowMatrix()
         {
-            var matrix = new DenseMatrix(1, this.Count);
-            for (var i = 0; i < this.Data.Length; i++)
-            {
-                matrix[0, i] = this.Data[i];
-            }
-
-            return matrix;
+            throw new NotImplementedException();
+            //var matrix = new SparseMatrix(1, this.Count);
+            //CommonParallel.For(
+            //         0,
+            //         this.Count,
+            //         index => matrix[0, i] = vector[index]); 
+            //return matrix;
         }
 
+        private readonly object lockObject = new object();
         /// <summary>Gets or sets the value at the given <paramref name="index"/>.</summary>
         /// <param name="index">The index of the value to get or set.</param>
         /// <returns>The value of the vector at the given <paramref name="index"/>.</returns> 
@@ -209,12 +200,33 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         {
             get
             {
-                return this.Data[index];
-            }
+                // If index is out of bounds
+                if ((index < 0) || (index >= Count))
+                {
+                    throw new IndexOutOfRangeException();
+                }
 
+                lock (lockObject)
+                {
+                    // Search if item idex exists in NonZeroIndices array in range "0 - real nonzero values count"
+                    int itemIndex = Array.BinarySearch(NonZeroIndices, 0, NonZerosCount, index);
+                    if (itemIndex >= 0)
+                        return NonZeroValues[itemIndex];
+                }
+                return 0.0;
+            }
             set
             {
-                this.Data[index] = value;
+                // If index is out of bounds
+                if ((index < 0) || (index >= Count))
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                lock (lockObject)
+                {
+                    SetValue(index, value);
+                }
             }
         }
 
@@ -233,7 +245,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// </returns>
         public override Matrix CreateMatrix(int rows, int columns)
         {
-            return new DenseMatrix(rows, columns);
+            throw new NotImplementedException();
+            //return new SparseMatrix(rows, columns);
         }
 
         /// <summary>
@@ -248,7 +261,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// </returns>
         public override Vector CreateVector(int size)
         {
-            return new DenseVector(size);
+            return new SparseVector(size);
         }
 
         /// <summary>
@@ -280,19 +293,37 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 return;
             }
 
-            var otherVector = target as DenseVector;
+            var otherVector = target as SparseVector;
             if (otherVector == null)
             {
                 CommonParallel.For(
-                    0, 
-                    this.Data.Length, 
-                    index => target[index] = this.Data[index]);
+                    0,
+                    this.Count,
+                    index => target[index] = this[index]);
             }
             else
             {
-                Buffer.BlockCopy(this.Data, 0, otherVector.Data, 0, this.Data.Length * Constants.SizeOfDouble);
+                // Lets copy only needed data. Portion of needed data is determined by NonZerosCount value
+                otherVector.NonZeroValues = new double[this.NonZerosCount];
+                otherVector.NonZeroIndices = new int[this.NonZerosCount];
+                otherVector.NonZerosCount = this.NonZerosCount;
+
+                Buffer.BlockCopy(this.NonZeroValues, 0, otherVector.NonZeroValues, 0, this.NonZerosCount * Constants.SizeOfDouble);
+                Buffer.BlockCopy(this.NonZeroIndices, 0, otherVector.NonZeroIndices, 0, this.NonZerosCount * Constants.SizeOfInt);
             }
         }
+
+        #region Operators and supplementary functions
+        
+        // NOTE: There are no operators as:
+        // public static implicit operator SparseVector(double[] array)
+        // and
+        // public static implicit operator double[](SparseVector vector)
+        // as it is in DenseVector. Because when creating vector from double[] values are copied to internal storage and if user wants
+        // to get double[] he should call SparseVector.ToArray(), then double[] will be generated and returned to a user.\
+
+        // In DenseVector implementation reference to double[] is assigned to interanl storage when casting from double[] and returned 
+        // when casting to double[] 
 
         /// <summary>
         /// Adds a scalar to each element of the vector.
@@ -304,11 +335,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 return;
             }
-
-            CommonParallel.For(
-                0, 
-                this.Data.Length, 
-                index => this.Data[index] += scalar);
+            for (int i = 0; i < this.Count; i++ )
+                this[i] += scalar;
         }
 
         /// <summary>
@@ -352,18 +380,80 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
             }
 
-            var denseVector = other as DenseVector;
+            var sparseVector = other as SparseVector;
 
-            if (denseVector == null)
+            if (sparseVector == null)
             {
                 base.Add(other);
             }
             else
             {
-                Control.LinearAlgebraProvider.AddVectorToScaledVector(this.Data, 1.0, denseVector.Data);
+                this.AddScaledSparceVector(1.0, sparseVector);
             }
         }
 
+        private void AddScaledSparceVector(double alpha, SparseVector other)
+        {
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (this.Count != other.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
+            }
+
+            if (alpha == 0.0)
+            {
+                return;
+            }
+
+            // I don't use ILinearAlgebraProvider because we will get no benefit due to "lock" in this[index]
+            // Possible fucniton in ILinearAlgebraProvider may be AddSparseVectorToScaledSparseVector(T[] y, int[] yIndices, T alpha, T[] x, int[] xIndices); 
+            // But it require to develop value setting algorithm and due to "lock" it will be even more greedy then implemented below
+            if (ReferenceEquals(this, other))
+            {
+                // Adding the same instance of sparse vector. That means if we modify "this" then "other" will be modified too.
+                // To avoid such problem lets change values in internal storage of "this"
+                if (alpha == 1.0)
+                {
+                    for (int i = 0; i < this.NonZerosCount; i++)
+                    {
+                        this.NonZeroValues[i] += this.NonZeroValues[i];
+                    }
+                }
+                else if (alpha == -1.0)
+                {
+                    NonZerosCount = 0; // Vector is subtracted from itself
+                }
+                else
+                {
+                    for (int i = 0; i < this.NonZerosCount; i++)
+                    {
+                        this[other.NonZeroIndices[i]] += alpha * this.NonZeroValues[i];
+                    }
+                }
+            }
+            else
+            {
+                // "this" and "other" are different objects, so by modifying "this" the "other" object will not be changed
+                if (alpha == 1.0)
+                {
+                    for (int i = 0; i < other.NonZerosCount; i++)
+                    {
+                        this[other.NonZeroIndices[i]] += other.NonZeroValues[i];
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < other.NonZerosCount; i++)
+                    {
+                        this[other.NonZeroIndices[i]] += alpha * other.NonZeroValues[i];
+                    }
+                }
+            }
+        }
         /// <summary>
         /// Adds another vector to this vector and stores the result into the result vector.
         /// </summary>
@@ -410,7 +500,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rightSide">The vector to get the values from.</param>
         /// <returns>A vector containing a the same values as <paramref name="rightSide"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static Vector operator +(DenseVector rightSide)
+        public static Vector operator +(SparseVector rightSide)
         {
             if (rightSide == null)
             {
@@ -428,7 +518,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <returns>The result of the addition.</returns>
         /// <exception cref="ArgumentException">If <paramref name="leftSide"/> and <paramref name="rightSide"/> are not the same size.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="leftSide"/> or <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static Vector operator +(DenseVector leftSide, DenseVector rightSide)
+        public static Vector operator +(SparseVector leftSide, SparseVector rightSide)
         {
             if (rightSide == null)
             {
@@ -449,7 +539,6 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             ret.Add(rightSide);
             return ret;
         }
-
         /// <summary>
         /// Subtracts a scalar from each element of the vector.
         /// </summary>
@@ -460,11 +549,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 return;
             }
-
-            CommonParallel.For(
-                0, 
-                this.Data.Length, 
-                index => this.Data[index] -= scalar);
+            for (int i = 0; i < this.Count; i++)
+                this[i] -= scalar;
         }
 
         /// <summary>
@@ -508,15 +594,15 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
             }
 
-            var denseVector = other as DenseVector;
+            var sparseVector = other as SparseVector;
 
-            if (denseVector == null)
+            if (sparseVector == null)
             {
                 base.Subtract(other);
             }
             else
             {
-                Control.LinearAlgebraProvider.AddVectorToScaledVector(this.Data, -1.0, denseVector.Data);
+                this.AddScaledSparceVector(-1.0, sparseVector);
             }
         }
 
@@ -565,7 +651,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rightSide">The vector to get the values from.</param>
         /// <returns>A vector containing the negated values as <paramref name="rightSide"/>.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static Vector operator -(DenseVector rightSide)
+        public static Vector operator -(SparseVector rightSide)
         {
             if (rightSide == null)
             {
@@ -583,7 +669,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <returns>The result of the subtraction.</returns>
         /// <exception cref="ArgumentException">If <paramref name="leftSide"/> and <paramref name="rightSide"/> are not the same size.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="leftSide"/> or <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static Vector operator -(DenseVector leftSide, DenseVector rightSide)
+        public static Vector operator -(SparseVector leftSide, SparseVector rightSide)
         {
             if (rightSide == null)
             {
@@ -612,11 +698,19 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <remarks>Added as an alternative to the unary negation operator.</remarks>
         public override Vector Negate()
         {
-            var result = new DenseVector(this.Count);
+            var result = new SparseVector(this.Count)
+                         {
+                             NonZeroValues = new double[this.NonZerosCount],
+                             NonZeroIndices = new int[this.NonZerosCount],
+                             NonZerosCount = this.NonZerosCount
+                         };
+
+            Buffer.BlockCopy(this.NonZeroIndices, 0, result.NonZeroIndices, 0, this.NonZerosCount * Constants.SizeOfInt);
+
             CommonParallel.For(
-                0, 
-                this.Data.Length, 
-                index => result[index] = -this.Data[index]);
+                0,
+                this.NonZerosCount,
+                index => result.NonZeroValues[index] = -this.NonZeroValues[index]);
 
             return result;
         }
@@ -631,8 +725,11 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 return;
             }
-
-            Control.LinearAlgebraProvider.ScaleArray(scalar, this.Data);
+            if (scalar == 0)
+            {
+                NonZerosCount = 0; // Set array empty
+            }
+            Control.LinearAlgebraProvider.ScaleArray(scalar, this.NonZeroValues);
         }
 
         /// <summary>
@@ -654,14 +751,14 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
             }
 
-            var denseVector = other as DenseVector;
+            double result = 0;
 
-            if (denseVector == null)
+            // base implementation iterates though all elements, but we need only take non-zeros 
+            for (var i = 0; i < this.NonZerosCount; i++)
             {
-                return base.DotProduct(other);
+                result += this.NonZeroValues[i] * other[this.NonZeroIndices[i]];
             }
-
-            return Control.LinearAlgebraProvider.DotProduct(this.Data, denseVector.Data);
+            return result;
         }
 
         /// <summary>
@@ -671,14 +768,14 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rightSide">The scalar value.</param>
         /// <returns>The result of the multiplication.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="leftSide"/> is <see langword="null" />.</exception>
-        public static DenseVector operator *(DenseVector leftSide, double rightSide)
+        public static SparseVector operator *(SparseVector leftSide, double rightSide)
         {
             if (leftSide == null)
             {
                 throw new ArgumentNullException("leftSide");
             }
 
-            var ret = (DenseVector)leftSide.Clone();
+            var ret = (SparseVector)leftSide.Clone();
             ret.Multiply(rightSide);
             return ret;
         }
@@ -690,14 +787,14 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rightSide">The vector to scale.</param>
         /// <returns>The result of the multiplication.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static DenseVector operator *(double leftSide, DenseVector rightSide)
+        public static SparseVector operator *(double leftSide, SparseVector rightSide)
         {
             if (rightSide == null)
             {
                 throw new ArgumentNullException("rightSide");
             }
 
-            var ret = (DenseVector)rightSide.Clone();
+            var ret = (SparseVector)rightSide.Clone();
             ret.Multiply(leftSide);
             return ret;
         }
@@ -710,7 +807,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <returns>The dot product between the two vectors.</returns>
         /// <exception cref="ArgumentException">If <paramref name="leftSide"/> and <paramref name="rightSide"/> are not the same size.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="leftSide"/> or <paramref name="rightSide"/> is <see langword="null" />.</exception>
-        public static double operator *(DenseVector leftSide, DenseVector rightSide)
+        public static double operator *(SparseVector leftSide, SparseVector rightSide)
         {
             if (rightSide == null)
             {
@@ -726,8 +823,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 throw new ArgumentException(Resources.ArgumentVectorsSameLength, "rightSide");
             }
-
-            return Control.LinearAlgebraProvider.DotProduct(leftSide.Data, rightSide.Data);
+            
+            return leftSide.DotProduct(rightSide);
         }
 
         /// <summary>
@@ -737,443 +834,17 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rightSide">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="leftSide"/> is <see langword="null" />.</exception>
-        public static DenseVector operator /(DenseVector leftSide, double rightSide)
+        public static SparseVector operator /(SparseVector leftSide, double rightSide)
         {
             if (leftSide == null)
             {
                 throw new ArgumentNullException("leftSide");
             }
-
-            var ret = (DenseVector)leftSide.Clone();
+            var ret = (SparseVector)leftSide.Clone();
             ret.Multiply(1.0 / rightSide);
             return ret;
         }
-
-        /// <summary>
-        /// Returns the value of the absolute minimum element.
-        /// </summary>
-        /// <returns>The value of the absolute minimum element.</returns>
-        public override double AbsoluteMinimum()
-        {
-            return Math.Abs(this.Data[this.AbsoluteMinimumIndex()]);
-        }
-
-        /// <summary>
-        /// Returns the index of the absolute minimum element.
-        /// </summary>
-        /// <returns>The index of absolute minimum element.</returns>   
-        public override int AbsoluteMinimumIndex()
-        {
-            var index = 0;
-            var min = Math.Abs(this.Data[index]);
-            for (var i = 1; i < this.Count; i++)
-            {
-                var test = Math.Abs(this.Data[i]);
-                if (test < min)
-                {
-                    index = i;
-                    min = test;
-                }
-            }
-
-            return index;
-        }
-
-        /// <summary>
-        /// Creates a vector containing specified elements.
-        /// </summary>
-        /// <param name="index">The first element to begin copying from.</param>
-        /// <param name="length">The number of elements to copy.</param>
-        /// <returns>A vector containing a copy of the specified elements.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><list><item>If <paramref name="index"/> is not positive or
-        /// greater than or equal to the size of the vector.</item>
-        /// <item>If <paramref name="index"/> + <paramref name="length"/> is greater than or equal to the size of the vector.</item>
-        /// </list></exception>
-        /// <exception cref="ArgumentException">If <paramref name="length"/> is not positive.</exception>
-        public override Vector SubVector(int index, int length)
-        {
-            if (index < 0 || index >= this.Count)
-            {
-                throw new ArgumentOutOfRangeException("index");
-            }
-
-            if (length <= 0)
-            {
-                throw new ArgumentOutOfRangeException("length");
-            }
-
-            if (index + length > this.Count)
-            {
-                throw new ArgumentOutOfRangeException("length");
-            }
-
-            var result = new DenseVector(length);
-
-            CommonParallel.For(
-                index, 
-                index + length, 
-                i => result.Data[i - index] = this.Data[i]);
-            return result;
-        }
-
-        /// <summary>
-        /// Set the values of this vector to the given values.
-        /// </summary>
-        /// <param name="values">The array containing the values to use.</param>
-        /// <exception cref="ArgumentNullException">If <paramref name="values"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="values"/> is not the same size as this vector.</exception>
-        public override void SetValues(double[] values)
-        {
-            if (values == null)
-            {
-                throw new ArgumentNullException("values");
-            }
-
-            if (values.Length != this.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "values");
-            }
-
-            CommonParallel.For(
-                0, 
-                values.Length, 
-                i => this.Data[i] = values[i]);
-        }
-
-        /// <summary>
-        /// Returns the value of maximum element.
-        /// </summary>
-        /// <returns>The value of maximum element.</returns>        
-        public override double Maximum()
-        {
-            return this.Data[this.MaximumIndex()];
-        }
-
-        /// <summary>
-        /// Returns the index of the absolute maximum element.
-        /// </summary>
-        /// <returns>The index of absolute maximum element.</returns>          
-        public override int MaximumIndex()
-        {
-            var index = 0;
-            var max = this.Data[0];
-            for (var i = 1; i < this.Count; i++)
-            {
-                if (max < this.Data[i])
-                {
-                    index = i;
-                    max = this.Data[i];
-                }
-            }
-
-            return index;
-        }
-
-        /// <summary>
-        /// Returns the value of the minimum element.
-        /// </summary>
-        /// <returns>The value of the minimum element.</returns>
-        public override double Minimum()
-        {
-            return this.Data[this.MinimumIndex()];
-        }
-
-        /// <summary>
-        /// Returns the index of the minimum element.
-        /// </summary>
-        /// <returns>The index of minimum element.</returns>  
-        public override int MinimumIndex()
-        {
-            var index = 0;
-            var min = this.Data[0];
-            for (var i = 1; i < this.Count; i++)
-            {
-                if (min > this.Data[i])
-                {
-                    index = i;
-                    min = this.Data[i];
-                }
-            }
-
-            return index;
-        }
-
-        /// <summary>
-        /// Computes the sum of the vector's elements.
-        /// </summary>
-        /// <returns>The sum of the vector's elements.</returns>
-        public override double Sum()
-        {
-            double result = 0;
-            for (var i = 0; i < this.Count; i++)
-            {
-                result += this.Data[i];
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Computes the sum of the absolute value of the vector's elements.
-        /// </summary>
-        /// <returns>The sum of the absolute value of the vector's elements.</returns>
-        public override double SumMagnitudes()
-        {
-            double result = 0;
-            for (var i = 0; i < this.Count; i++)
-            {
-                result += Math.Abs(this.Data[i]);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Pointwise multiplies this vector with another vector.
-        /// </summary>
-        /// <param name="other">The vector to pointwise multiply with this one.</param>
-        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
-        public override void PointWiseMultiply(Vector other)
-        {
-            if (other == null)
-            {
-                throw new ArgumentNullException("other");
-            }
-
-            if (this.Count != other.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
-            }
-
-            var denseVector = other as DenseVector;
-
-            if (denseVector == null)
-            {
-                base.PointWiseMultiply(other);
-            }
-            else
-            {
-                CommonParallel.For(
-                    0, 
-                    this.Count, 
-                    index => this[index] *= other[index]);
-            }
-        }
-
-        /// <summary>
-        /// Pointwise multiplies this vector with another vector and stores the result into the result vector.
-        /// </summary>
-        /// <param name="other">The vector to pointwise multiply with this one.</param>
-        /// <param name="result">The vector to store the result of the pointwise multiplication.</param>
-        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentNullException">If the result vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
-        /// <exception cref="ArgumentException">If this vector and <paramref name="result"/> are not the same size.</exception>
-        public override void PointWiseMultiply(Vector other, Vector result)
-        {
-            if (result == null)
-            {
-                throw new ArgumentNullException("result");
-            }
-
-            if (other == null)
-            {
-                throw new ArgumentNullException("other");
-            }
-
-            if (this.Count != other.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
-            }
-
-            if (this.Count != result.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "result");
-            }
-
-            if (ReferenceEquals(this, result) || ReferenceEquals(other, result))
-            {
-                var tmp = result.CreateVector(result.Count);
-                this.PointWiseMultiply(other, tmp);
-                tmp.CopyTo(result);
-            }
-            else
-            {
-                this.CopyTo(result);
-                result.PointWiseMultiply(other);
-            }
-        }
-
-        /// <summary>
-        /// Pointwise divide this vector with another vector.
-        /// </summary>
-        /// <param name="other">The vector to pointwise divide this one by.</param>
-        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
-        public override void PointWiseDivide(Vector other)
-        {
-            if (other == null)
-            {
-                throw new ArgumentNullException("other");
-            }
-
-            if (this.Count != other.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
-            }
-
-            var denseVector = other as DenseVector;
-
-            if (denseVector == null)
-            {
-                base.PointWiseMultiply(other);
-            }
-            else
-            {
-                CommonParallel.For(
-                    0, 
-                    this.Count, 
-                    index => this[index] /= other[index]);
-            }
-        }
-
-        /// <summary>
-        /// Pointwise divide this vector with another vector and stores the result into the result vector.
-        /// </summary>
-        /// <param name="other">The vector to pointwise divide this one by.</param>
-        /// <param name="result">The vector to store the result of the pointwise division.</param>
-        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentNullException">If the result vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
-        /// <exception cref="ArgumentException">If this vector and <paramref name="result"/> are not the same size.</exception>
-        public override void PointWiseDivide(Vector other, Vector result)
-        {
-            if (result == null)
-            {
-                throw new ArgumentNullException("result");
-            }
-
-            if (other == null)
-            {
-                throw new ArgumentNullException("other");
-            }
-
-            if (this.Count != other.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
-            }
-
-            if (this.Count != result.Count)
-            {
-                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "result");
-            }
-
-            if (ReferenceEquals(this, result) || ReferenceEquals(other, result))
-            {
-                var tmp = result.CreateVector(result.Count);
-                this.PointWiseDivide(other, tmp);
-                tmp.CopyTo(result);
-            }
-            else
-            {
-                this.CopyTo(result);
-                result.PointWiseDivide(other);
-            }
-        }
-
-        /// <summary>
-        /// Dyadic product of two vectors
-        /// </summary>
-        /// <param name="u">First vector</param>
-        /// <param name="v">Second vector</param>
-        /// <returns>Matrix M[i,j] = u[i]*v[j] </returns>
-        /// <exception cref="ArgumentNullException">If the u vector is <see langword="null" />.</exception> 
-        /// <exception cref="ArgumentNullException">If the v vector is <see langword="null" />.</exception> 
-        public static DenseMatrix DyadicProduct(DenseVector u, DenseVector v)
-        {
-            if (u == null)
-            {
-                throw new ArgumentNullException("u");
-            }
-
-            if (v == null)
-            {
-                throw new ArgumentNullException("v");
-            }
-
-            var matrix = new DenseMatrix(u.Count, v.Count);
-            CommonParallel.For(
-                0, 
-                u.Count, 
-                i => CommonParallel.For(0, v.Count, j => matrix.At(i, j, u.Data[i] * v.Data[j])));
-            return matrix;
-        }
-
-        /// <summary>
-        /// Generates a vector with random elements
-        /// </summary>
-        /// <param name="length">Number of elements in the vector.</param>
-        /// <param name="randomDistribution">Continuous Random Distribution or Source</param>
-        /// <returns>
-        /// A vector with n-random elements distributed according
-        /// to the specified random distribution.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">If the n vector is non poisitive<see langword="null" />.</exception> 
-        public override Vector Random(int length, IContinuousDistribution randomDistribution)
-        {
-            if (length < 0)
-            {
-                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
-            }
-
-            var v = (DenseVector)this.CreateVector(length);
-            for (var index = 0; index < v.Data.Length; index++)
-            {
-                v.Data[index] = randomDistribution.Sample();
-            }
-
-            return v;
-        }
-
-        /// <summary>
-        /// Generates a vector with random elements
-        /// </summary>
-        /// <param name="length">Number of elements in the vector.</param>
-        /// <param name="randomDistribution">Continuous Random Distribution or Source</param>
-        /// <returns>
-        /// A vector with n-random elements distributed according
-        /// to the specified random distribution.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">If the n vector is non poisitive<see langword="null" />.</exception> 
-        public override Vector Random(int length, IDiscreteDistribution randomDistribution)
-        {
-            if (length < 0)
-            {
-                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
-            }
-
-            var v = (DenseVector)this.CreateVector(length);
-            for (var index = 0; index < v.Data.Length; index++)
-            {
-                v.Data[index] = randomDistribution.Sample();
-            }
-
-            return v;
-        }
-
-        /// <summary>
-        /// Tensor Product (Dyadic) of this and another vector.
-        /// </summary>
-        /// <param name="v">The vector to operate on.</param>
-        /// <returns>
-        /// Matrix M[i,j] = this[i] * v[j].
-        /// </returns>
-        /// <seealso cref="DyadicProduct"/>
-        public Matrix TensorMultiply(DenseVector v)
-        {
-            return DyadicProduct(this, v);
-        }
+        #endregion
 
         #region Vector Norms
 
@@ -1185,9 +856,9 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         {
             var sum = 0.0;
 
-            for (var i = 0; i < this.Data.Length; i++)
+            for (var i = 0; i < this.Count; i++)
             {
-                sum = SpecialFunctions.Hypotenuse(sum, this.Data[i]);
+                sum = SpecialFunctions.Hypotenuse(sum, this[i]);
             }
 
             return sum;
@@ -1200,9 +871,9 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         public override double Norm1()
         {
             return CommonParallel.Aggregate(
-                0, 
-                this.Count, 
-                index => Math.Abs(this.Data[index]));
+                0,
+                this.NonZerosCount,
+                index => Math.Abs(this.NonZeroValues[index]));
         }
 
         /// <summary>
@@ -1228,9 +899,9 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             var sum = CommonParallel.Aggregate(
-                0, 
-                this.Count, 
-                index => Math.Pow(Math.Abs(this.Data[index]), p));
+                0,
+                this.NonZerosCount,
+                index => Math.Pow(Math.Abs(this.NonZeroValues[index]), p));
 
             return Math.Pow(sum, 1.0 / p);
         }
@@ -1242,37 +913,35 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         public override double NormInfinity()
         {
             return CommonParallel.Select(
-                0, 
-                this.Count, 
-                (index, localData) => localData = Math.Max(localData, Math.Abs(this.Data[index])), 
-                Math.Max);
+                0,
+                this.NonZerosCount,
+                (index, localData) => localData = Math.Max(localData, Math.Abs(this.NonZeroValues[index])), Math.Max);
         }
-
         #endregion
 
         #region Parse Functions
 
         /// <summary>
-        /// Creates a double dense vector based on a string. The string can be in the following formats (without the
+        /// Creates a double sparse vector based on a string. The string can be in the following formats (without the
         /// quotes): 'n', 'n,n,..', '(n,n,..)', '[n,n,...]', where n is a double.
         /// </summary>
         /// <returns>
-        /// A double dense vector containing the values specified by the given string.
+        /// A double sparce vector containing the values specified by the given string.
         /// </returns>
         /// <param name="value">
         /// The string to parse.
         /// </param>
-        public static DenseVector Parse(string value)
+        public static SparseVector Parse(string value)
         {
             return Parse(value, null);
         }
 
         /// <summary>
-        /// Creates a double dense vector based on a string. The string can be in the following formats (without the
+        /// Creates a double sparse vector based on a string. The string can be in the following formats (without the
         /// quotes): 'n', 'n,n,..', '(n,n,..)', '[n,n,...]', where n is a double.
         /// </summary>
         /// <returns>
-        /// A double dense vector containing the values specified by the given string.
+        /// A double sparce vector containing the values specified by the given string.
         /// </returns>
         /// <param name="value">
         /// the string to parse.
@@ -1280,7 +949,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="formatProvider">
         /// An <see cref="IFormatProvider"/> that supplies culture-specific formatting information.
         /// </param>
-        public static DenseVector Parse(string value, IFormatProvider formatProvider)
+        public static SparseVector Parse(string value, IFormatProvider formatProvider)
         {
             if (value == null)
             {
@@ -1346,11 +1015,11 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 }
             }
 
-            return new DenseVector(data);
+            return new SparseVector(data);
         }
 
         /// <summary>
-        /// Converts the string representation of a real dense vector to double-precision dense vector equivalent.
+        /// Converts the string representation of a real sparse vector to double-precision sparse vector equivalent.
         /// A return value indicates whether the conversion succeeded or failed.
         /// </summary>
         /// <param name="value">
@@ -1363,13 +1032,13 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// If the conversion succeeds, the result will contain a complex number equivalent to value.
         /// Otherwise the result will be <c>null</c>.
         /// </returns>
-        public static bool TryParse(string value, out DenseVector result)
+        public static bool TryParse(string value, out SparseVector result)
         {
             return TryParse(value, null, out result);
         }
 
         /// <summary>
-        /// Converts the string representation of a real dense vector to double-precision dense vector equivalent.
+        /// Converts the string representation of a real sparse vector to double-precision sparse vector equivalent.
         /// A return value indicates whether the conversion succeeded or failed.
         /// </summary>
         /// <param name="value">
@@ -1385,7 +1054,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// If the conversion succeeds, the result will contain a complex number equivalent to value.
         /// Otherwise the result will be <c>null</c>.
         /// </returns>
-        public static bool TryParse(string value, IFormatProvider formatProvider, out DenseVector result)
+        public static bool TryParse(string value, IFormatProvider formatProvider, out SparseVector result)
         {
             bool ret;
             try
@@ -1408,5 +1077,159 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         }
 
         #endregion
+
+        #region Implementation
+        /// <summary>
+        /// Delete, Add or Update the value in NonZeroValues and NonZeroIndices
+        /// </summary>
+        /// <param name="index">Value real index in array</param>
+        /// <param name="value">Value</param>
+        /// <remarks>This method assume that index is between 0 and Array Size</remarks>
+        private void SetValue(int index, double value)
+        {
+            // Search if "index" already exists in range "0 - real nonzero values count"
+            int itemIndex = Array.BinarySearch(NonZeroIndices, 0, NonZerosCount, index);
+
+            if (itemIndex >= 0)
+            {
+                // Item already exist at itemIndex
+                if (value == 0.0)
+                {
+                    // Value is zero. Let's delete it from Values and Indices array
+                    for (int i = itemIndex + 1; i < NonZerosCount; i++)
+                    {
+                        NonZeroValues[i - 1] = NonZeroValues[i];
+                        NonZeroIndices[i - 1] = NonZeroIndices[i];
+                    }
+                    NonZerosCount -= 1;
+        
+                    // Check if the storage needs to be shrink. This is reasonable to do if 
+                    // there are a lot of non-zero elements and storage is two times bigger
+                    if ((NonZerosCount > 1024) && (NonZerosCount < NonZeroIndices.Length / 2))
+                    {
+                        Array.Resize(ref NonZeroValues, NonZerosCount);
+                        Array.Resize(ref NonZeroIndices, NonZerosCount);
+                    }
+
+                }
+                else
+                {
+                    NonZeroValues[itemIndex] = value;
+                }
+            }
+            else
+            {
+                itemIndex = ~itemIndex; //Index where to put new value
+
+                // Check if the storage needs to be increased
+                if (NonZerosCount == NonZeroValues.Length)
+                {
+                    // Value and Indices arrays are completely full so we increase the size
+                    int size = Math.Min(NonZeroValues.Length + GrowthSize(), Count);
+                    Array.Resize(ref NonZeroValues, size);
+                    Array.Resize(ref NonZeroIndices, size);
+                }
+
+                // Move all values (with an position larger than index) in the value array 
+                // to the next position
+                // move all values (with an position larger than index) in the columIndices 
+                // array to the next position
+                for (int i = NonZerosCount - 1; i > itemIndex - 1; i--)
+                {
+                    NonZeroValues[i + 1] = NonZeroValues[i];
+                    NonZeroIndices[i + 1] = NonZeroIndices[i];
+                }
+
+                // Add the value and the column index
+                NonZeroValues[itemIndex] = value;
+                NonZeroIndices[itemIndex] = index;
+
+                // increase the number of non-zero numbers by one
+                NonZerosCount += 1;
+            }
+        }
+        /// <summary>
+        /// Calculates the amount with which to grow the storage array's if they need to be
+        /// increased in size.
+        /// </summary>
+        private int GrowthSize()
+        {
+            int delta;
+            if (NonZeroValues.Length > 1024)
+            {
+                delta = NonZeroValues.Length / 4;
+            }
+            else
+            {
+                if (NonZeroValues.Length > 256)
+                {
+                    delta = 512;
+                }
+                else
+                {
+                    delta = NonZeroValues.Length > 64 ? 128 : 32;
+                }
+            }
+            return delta;
+        }
+
+        #endregion
+
+        #region System.Object override
+        /// <summary>
+        /// Check equality. If this is regular vector, then chek by base implementation. If Sparse - use own equition
+        /// </summary>
+        /// <param name="obj">Object to compare</param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            var sparseVector = obj as SparseVector;
+
+            if (sparseVector == null)
+                return base.Equals(obj);
+
+            // Accept if the argument is the same object as this.
+            if (ReferenceEquals(this, sparseVector))
+            {
+                return true;
+            }
+
+            if ((this.Count != sparseVector.Count) || (this.NonZerosCount != sparseVector.NonZerosCount))
+            {
+                return false;
+            }
+
+            // If all else fails, perform element wise comparison.
+            for (var index = 0; index < this.NonZerosCount; index++)
+            {
+                if (!this.NonZeroValues[index].AlmostEqual(sparseVector.NonZeroValues[index]) || (this.NonZeroIndices[index] != sparseVector.NonZeroIndices[index]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode()
+        {
+            var hashNum = Math.Min(this.NonZerosCount, 20);
+            long hash = 0;
+            for (var i = 0; i < hashNum; i++)
+            {
+#if SILVERLIGHT
+                hash ^= Precision.DoubleToInt64Bits(this.NonZeroValues[i]);
+#else
+                hash ^= BitConverter.DoubleToInt64Bits(this.NonZeroValues[i]);
+#endif
+            }
+
+            return BitConverter.ToInt32(BitConverter.GetBytes(hash), 4);
+        }
+#endregion
     }
 }

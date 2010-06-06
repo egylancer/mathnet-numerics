@@ -3,9 +3,7 @@
 // http://numerics.mathdotnet.com
 // http://github.com/mathnet/mathnet-numerics
 // http://mathnetnumerics.codeplex.com
-//
 // Copyright (c) 2009-2010 Math.NET
-//
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
 // files (the "Software"), to deal in the Software without
@@ -14,10 +12,8 @@
 // copies of the Software, and to permit persons to whom the
 // Software is furnished to do so, subject to the following
 // conditions:
-//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -34,6 +30,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
     using System.Collections;
     using System.Collections.Generic;
     using System.Text;
+    using Distributions;
     using Properties;
     using Threading;
 
@@ -133,8 +130,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => this[index] += scalar);
         }
 
@@ -212,8 +209,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => this[index] += other[index]);
         }
 
@@ -277,8 +274,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => this[index] -= scalar);
         }
 
@@ -356,8 +353,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => this[index] -= other[index]);
         }
 
@@ -421,8 +418,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => this[index] *= scalar);
         }
 
@@ -546,6 +543,353 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             result.Multiply(1.0 / scalar);
+        }
+
+        /// <summary>
+        /// Pointwise multiplies this vector with another vector.
+        /// </summary>
+        /// <param name="other">The vector to pointwise multiply with this one.</param>
+        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
+        public virtual void PointWiseMultiply(Vector other)
+        {
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (this.Count != other.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
+            }
+
+            CommonParallel.For(
+                0, 
+                this.Count, 
+                index => this[index] *= other[index]);
+        }
+
+        /// <summary>
+        /// Pointwise multiplies this vector with another vector and stores the result into the result vector.
+        /// </summary>
+        /// <param name="other">The vector to pointwise multiply with this one.</param>
+        /// <param name="result">The vector to store the result of the pointwise multiplication.</param>
+        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentNullException">If the result vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
+        /// <exception cref="ArgumentException">If this vector and <paramref name="result"/> are not the same size.</exception>
+        public virtual void PointWiseMultiply(Vector other, Vector result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException("result");
+            }
+
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (this.Count != other.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
+            }
+
+            if (this.Count != result.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "result");
+            }
+
+            if (ReferenceEquals(this, result) || ReferenceEquals(other, result))
+            {
+                var tmp = result.CreateVector(result.Count);
+                this.PointWiseMultiply(other, tmp);
+                tmp.CopyTo(result);
+            }
+            else
+            {
+                this.CopyTo(result);
+                result.PointWiseMultiply(other);
+            }
+        }
+
+        /// <summary>
+        /// Pointwise divide this vector with another vector.
+        /// </summary>
+        /// <param name="other">The vector to pointwise divide this one by.</param>
+        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
+        public virtual void PointWiseDivide(Vector other)
+        {
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (this.Count != other.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
+            }
+
+            CommonParallel.For(
+                0, 
+                this.Count, 
+                index => this[index] /= other[index]);
+        }
+
+        /// <summary>
+        /// Pointwise divide this vector with another vector and stores the result into the result vector.
+        /// </summary>
+        /// <param name="other">The vector to pointwise divide this one by.</param>
+        /// <param name="result">The vector to store the result of the pointwise division.</param>
+        /// <exception cref="ArgumentNullException">If the other vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentNullException">If the result vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentException">If this vector and <paramref name="other"/> are not the same size.</exception>
+        /// <exception cref="ArgumentException">If this vector and <paramref name="result"/> are not the same size.</exception>
+        public virtual void PointWiseDivide(Vector other, Vector result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException("result");
+            }
+
+            if (other == null)
+            {
+                throw new ArgumentNullException("other");
+            }
+
+            if (this.Count != other.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "other");
+            }
+
+            if (this.Count != result.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "result");
+            }
+
+            if (ReferenceEquals(this, result) || ReferenceEquals(other, result))
+            {
+                var tmp = result.CreateVector(result.Count);
+                this.PointWiseDivide(other, tmp);
+                tmp.CopyTo(result);
+            }
+            else
+            {
+                this.CopyTo(result);
+                result.PointWiseDivide(other);
+            }
+        }
+
+        /// <summary>
+        /// Dyadic product of two vectors
+        /// </summary>
+        /// <param name="u">First vector</param>
+        /// <param name="v">Second vector</param>
+        /// <returns>Matrix M[i,j] = u[i]*v[j] </returns>
+        /// <exception cref="ArgumentNullException">If the u vector is <see langword="null" />.</exception> 
+        /// <exception cref="ArgumentNullException">If the v vector is <see langword="null" />.</exception> 
+        public static DenseMatrix DyadicProduct(Vector u, Vector v)
+        {
+            if (u == null)
+            {
+                throw new ArgumentNullException("u");
+            }
+
+            if (v == null)
+            {
+                throw new ArgumentNullException("v");
+            }
+
+            var matrix = new DenseMatrix(u.Count, v.Count);
+            CommonParallel.For(
+                0, 
+                u.Count, 
+                i => CommonParallel.For(0, v.Count, j => matrix.At(i, j, u[i] * v[j])));
+            return matrix;
+        }
+
+        /// <summary>
+        /// Generates a vector with random elements
+        /// </summary>
+        /// <param name="length">Number of elements in the vector.</param>
+        /// <param name="randomDistribution">Continuous Random Distribution or Source</param>
+        /// <returns>
+        /// A vector with n-random elements distributed according
+        /// to the specified random distribution.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If the n vector is non poisitive<see langword="null" />.</exception> 
+        public virtual Vector Random(int length, IContinuousDistribution randomDistribution)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
+            }
+
+            var v = this.CreateVector(length);
+            for (var index = 0; index < v.Count; index++)
+            {
+                v[index] = randomDistribution.Sample();
+            }
+
+            return v;
+        }
+
+        /// <summary>
+        /// Generates a vector with random elements
+        /// </summary>
+        /// <param name="length">Number of elements in the vector.</param>
+        /// <param name="randomDistribution">Continuous Random Distribution or Source</param>
+        /// <returns>
+        /// A vector with n-random elements distributed according
+        /// to the specified random distribution.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If the n vector is non poisitive<see langword="null" />.</exception> 
+        public virtual Vector Random(int length, IDiscreteDistribution randomDistribution)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
+            }
+
+            var v = this.CreateVector(length);
+            for (var index = 0; index < v.Count; index++)
+            {
+                v[index] = randomDistribution.Sample();
+            }
+
+            return v;
+        }
+
+        /// <summary>
+        /// Tensor Product (Dyadic) of this and another vector.
+        /// </summary>
+        /// <param name="v">The vector to operate on.</param>
+        /// <returns>
+        /// Matrix M[i,j] = this[i] * v[j].
+        /// </returns>
+        /// <seealso cref="DyadicProduct"/>
+        public Matrix TensorMultiply(Vector v)
+        {
+            return DyadicProduct(this, v);
+        }
+
+        /// <summary>
+        /// Returns the value of the absolute minimum element.
+        /// </summary>
+        /// <returns>The value of the absolute minimum element.</returns>
+        public virtual double AbsoluteMinimum()
+        {
+            return Math.Abs(this[this.AbsoluteMinimumIndex()]);
+        }
+
+        /// <summary>
+        /// Returns the index of the absolute minimum element.
+        /// </summary>
+        /// <returns>The index of absolute minimum element.</returns>   
+        public virtual int AbsoluteMinimumIndex()
+        {
+            var index = 0;
+            var min = Math.Abs(this[index]);
+            for (var i = 1; i < this.Count; i++)
+            {
+                var test = Math.Abs(this[i]);
+                if (test < min)
+                {
+                    index = i;
+                    min = test;
+                }
+            }
+
+            return index;
+        }
+
+        /// <summary>
+        /// Returns the value of maximum element.
+        /// </summary>
+        /// <returns>The value of maximum element.</returns>        
+        public virtual double Maximum()
+        {
+            return this[this.MaximumIndex()];
+        }
+
+        /// <summary>
+        /// Returns the index of the absolute maximum element.
+        /// </summary>
+        /// <returns>The index of absolute maximum element.</returns>          
+        public virtual int MaximumIndex()
+        {
+            var index = 0;
+            var max = this[0];
+            for (var i = 1; i < this.Count; i++)
+            {
+                if (max < this[i])
+                {
+                    index = i;
+                    max = this[i];
+                }
+            }
+
+            return index;
+        }
+
+        /// <summary>
+        /// Returns the value of the minimum element.
+        /// </summary>
+        /// <returns>The value of the minimum element.</returns>
+        public virtual double Minimum()
+        {
+            return this[this.MinimumIndex()];
+        }
+
+        /// <summary>
+        /// Returns the index of the minimum element.
+        /// </summary>
+        /// <returns>The index of minimum element.</returns>  
+        public virtual int MinimumIndex()
+        {
+            var index = 0;
+            var min = this[0];
+            for (var i = 1; i < this.Count; i++)
+            {
+                if (min > this[i])
+                {
+                    index = i;
+                    min = this[i];
+                }
+            }
+
+            return index;
+        }
+
+        /// <summary>
+        /// Computes the sum of the vector's elements.
+        /// </summary>
+        /// <returns>The sum of the vector's elements.</returns>
+        public virtual double Sum()
+        {
+            double result = 0;
+            for (var i = 0; i < this.Count; i++)
+            {
+                result += this[i];
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Computes the sum of the absolute value of the vector's elements.
+        /// </summary>
+        /// <returns>The sum of the absolute value of the vector's elements.</returns>
+        public virtual double SumMagnitudes()
+        {
+            double result = 0;
+            for (var i = 0; i < this.Count; i++)
+            {
+                result += Math.Abs(this[i]);
+            }
+
+            return result;
         }
 
         #endregion
@@ -785,10 +1129,10 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             var sum = CommonParallel.Aggregate(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => Math.Pow(Math.Abs(this[index]), p));
-            
+
             return Math.Pow(sum, 1.0 / p);
         }
 
@@ -801,36 +1145,10 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         public virtual double NormInfinity()
         {
             return CommonParallel.Select(
-                0,
-                this.Count,
-                (index, localData) => localData = Math.Max(localData, Math.Abs(this[index])),
+                0, 
+                this.Count, 
+                (index, localData) => localData = Math.Max(localData, Math.Abs(this[index])), 
                 Math.Max);
-
-            /*
-            var max = 0.0;
-            var syncLock = new object();
-
-            Parallel.ForEach(
-                Partitioner.Create(0, this.Count), 
-                () => 0.0, 
-                (range, loop, localData) =>
-                {
-                    for (var i = range.Item1; i < range.Item2; i++)
-                    {
-                        localData = Math.Max(localData, Math.Abs(this[i]));
-                    }
-
-                    return localData;
-                }, 
-                localResult =>
-                {
-                    lock (syncLock)
-                    {
-                        max = Math.Max(localResult, max);
-                    }
-                });
-
-            return max;*/
         }
 
         /// <summary>
@@ -899,8 +1217,8 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             CommonParallel.For(
-                0,
-                this.Count,
+                0, 
+                this.Count, 
                 index => target[index] = this[index]);
         }
 
@@ -952,15 +1270,15 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 this.CopyTo(tmpVector);
 
                 CommonParallel.For(
-                    0,
-                    count,
+                    0, 
+                    count, 
                     index => destination[destinationOffset + index] = tmpVector[offset + index]);
             }
             else
             {
                 CommonParallel.For(
-                    0,
-                    count,
+                    0, 
+                    count, 
                     index => destination[destinationOffset + index] = this[offset + index]);
             }
         }
@@ -1014,6 +1332,67 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             }
 
             return matrix;
+        }
+
+        /// <summary>
+        /// Creates a vector containing specified elements.
+        /// </summary>
+        /// <param name="index">The first element to begin copying from.</param>
+        /// <param name="length">The number of elements to copy.</param>
+        /// <returns>A vector containing a copy of the specified elements.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><list><item>If <paramref name="index"/> is not positive or
+        /// greater than or equal to the size of the vector.</item>
+        /// <item>If <paramref name="index"/> + <paramref name="length"/> is greater than or equal to the size of the vector.</item>
+        /// </list></exception>
+        /// <exception cref="ArgumentException">If <paramref name="length"/> is not positive.</exception>
+        public virtual Vector SubVector(int index, int length)
+        {
+            if (index < 0 || index >= this.Count)
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
+
+            if (length <= 0)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            if (index + length > this.Count)
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
+
+            var result = this.CreateVector(length);
+
+            CommonParallel.For(
+                index, 
+                index + length, 
+                i => result[i - index] = this[i]);
+            return result;
+        }
+
+        /// <summary>
+        /// Set the values of this vector to the given values.
+        /// </summary>
+        /// <param name="values">The array containing the values to use.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="values"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="values"/> is not the same size as this vector.</exception>
+        public virtual void SetValues(double[] values)
+        {
+            if (values == null)
+            {
+                throw new ArgumentNullException("values");
+            }
+
+            if (values.Length != this.Count)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "values");
+            }
+
+            CommonParallel.For(
+                0, 
+                values.Length, 
+                i => this[i] = values[i]);
         }
 
         #endregion
