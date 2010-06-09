@@ -2438,5 +2438,45 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         }
 
         #endregion
+
+        #region ILinearAlgebraProvider<double> Members
+
+
+        public void LUFactor(double[] a, int aOrder, int[] ipiv)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region ILinearAlgebraProvider<float> Members
+
+
+        public void LUFactor(float[] a, int aOrder, int[] ipiv)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region ILinearAlgebraProvider<Complex> Members
+
+
+        public void LUFactor(Complex[] a, int aOrder, int[] ipiv)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region ILinearAlgebraProvider<Complex32> Members
+
+
+        public void LUFactor(Complex32[] a, int aOrder, int[] ipiv)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

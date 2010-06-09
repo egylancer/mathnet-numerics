@@ -33,8 +33,6 @@ namespace MathNet.Numerics.LinearAlgebra.Double
     using System;
     using Properties;
     using Threading;
-using System.Collections;
-using System.Collections.Generic;
 
     /// <summary>
     /// Defines the base class for <c>Matrix</c> classes.
@@ -654,26 +652,26 @@ using System.Collections.Generic;
                 throw new ArgumentException(Resources.ArgumentMatrixSameColumnDimension);
             }
 
-            CommonParallel.Invoke(
-                () =>
-                {
-                    CommonParallel.For(
-                       0,
-                       this.RowCount,
-                       i =>
-                       {
-                           CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
-                       });
-                },
-                () =>
-                {
-                    CommonParallel.For(
-                       0,
-                       right.RowCount,
-                       i =>
-                       {
-                           CommonParallel.For(0, right.ColumnCount, j => result.At(i, j + ColumnCount, right.At(i, j)));
-                       });                    
+            CommonParallel.For(
+               0,
+               this.RowCount,
+               i =>
+               {
+                   for (int j = 0; j < this.ColumnCount; j++)
+                   {
+                       result.At(i, j, At(i, j));
+                   }
+               });
+
+            CommonParallel.For(
+               0,
+               right.RowCount,
+               i =>
+               {
+                   for (int j = 0; j < right.ColumnCount; j++)
+                   {
+                       result.At(i, j + ColumnCount, right.At(i, j));
+                   }
                });
         }
 
@@ -729,27 +727,27 @@ using System.Collections.Generic;
             {
                 throw new ArgumentException("result", Resources.ArgumentMatrixDimensions);
             }
-
-            CommonParallel.Invoke(
-                () =>
+           
+            CommonParallel.For(
+                0,
+                this.RowCount,
+                i =>
                 {
-                    CommonParallel.For(
-                        0,
-                        this.RowCount,
-                        i =>
-                        {
-                            CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
-                        });
-                },
-                () =>
+                    for (int j = 0; j < this.ColumnCount; j++)
+                    {
+                        result.At(i, j, At(i, j));
+                    }
+                });
+            
+            CommonParallel.For(
+                0,
+                lower.RowCount,
+                i =>
                 {
-                    CommonParallel.For(
-                        0,
-                        lower.RowCount,
-                        i =>
-                        {
-                            CommonParallel.For(0, lower.ColumnCount, j => result.At(i + RowCount, j, lower.At(i, j)));
-                        });
+                    for (int j = 0; j < lower.ColumnCount; j++)
+                    {
+                        result.At(i + RowCount, j, lower.At(i, j));
+                    }
                 });
         }
 
@@ -819,27 +817,27 @@ using System.Collections.Generic;
                 throw new ArgumentException("result", Resources.ArgumentMatrixDimensions);
             }
 
-            CommonParallel.Invoke(
-                () =>
+            CommonParallel.For(
+                0,
+                this.RowCount,
+                i =>
                 {
-                    CommonParallel.For(
-                        0,
-                        this.RowCount,
-                        i =>
-                        {
-                            CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
-                        });
-                },               
-                () =>
-                {
-                    CommonParallel.For(
-                        0,
-                        lower.RowCount,
-                        i =>
-                        {
-                            CommonParallel.For(0, lower.ColumnCount, j => result.At(i + RowCount, j + ColumnCount, lower.At(i, j)));
-                        });
+                    for (var j = 0; j < this.ColumnCount; j++)
+                    {
+                        result.At(i, j, At(i, j));
+                    }
                 });
+
+            CommonParallel.For(
+                0,
+                lower.RowCount,
+                i =>
+                {
+                    for (var j = 0; j < lower.ColumnCount; j++)
+                    {
+                        result.At(i + RowCount, j + ColumnCount, lower.At(i, j));
+                    }
+                });            
         }
 
         /// <summary>
@@ -850,26 +848,5 @@ using System.Collections.Generic;
         {
             throw new NotImplementedException();
         }
-
-        /// <summary>Calculates the condition number of this matrix.</summary>
-        /// <returns>The condition number of the matrix.</returns>
-        /// <remarks>The condition number is calculated using singular value decomposition.</remarks>
-        public virtual double ConditionNumber()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>Computes the determinant of this matrix.</summary>
-        /// <returns>The determinant of this matrix.</returns>
-        public virtual void Determinant()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Returns an <see cref="IEnumerator{T}"/> that enumerates over the matrix columns.
-        /// </summary>
-        /// <returns>An <see cref="IEnumerator{T}"/> that enumerates over the matrix columns</returns>
-        /// <seealso cref="IEnumerator{T}"/>
     }
 }

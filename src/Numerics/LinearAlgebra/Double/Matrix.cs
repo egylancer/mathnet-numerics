@@ -34,6 +34,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
     using System.Text;
     using Properties;
     using MathNet.Numerics.Threading;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Defines the base class for <c>Matrix</c> classes.
@@ -558,6 +559,294 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 }
             });
         }
+
+        /// <summary>
+        /// Creates a matrix that contains the values from the requested sub-matrix.
+        /// </summary>
+        /// <param name="rowIndex">The row to start copying from.</param>
+        /// <param name="rowLength">The number of rows to copy. Must be positive.</param>
+        /// <param name="columnIndex">The column to start copying from.</param>
+        /// <param name="columnLength">The number of columns to copy. Must be positive.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If: <list><item><paramref name="rowIndex"/> is
+        /// negative, or greater than or equal to the number of rows.</item>
+        /// <item><paramref name="columnIndex"/> is negative, or greater than or equal to the number 
+        /// of columns.</item>
+        /// <item><c>(columnIndex + columnLength) &gt;= Columns</c></item>
+        /// <item><c>(rowIndex + rowLength) &gt;= Rows</c></item></list></exception>        
+        /// <exception cref="ArgumentException">If <paramref name="rowLength"/> or <paramref name="columnLength"/>
+        /// is not positive.</exception>
+        public virtual Matrix SubMatrix(int rowIndex, int rowLength, int columnIndex, int columnLength)
+        {
+            if (rowIndex >= RowCount || rowIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("rowIndex");
+            }
+
+            if (columnIndex >= ColumnCount || columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("columnIndex");
+            }
+
+            if (rowLength < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "rowLength");
+            }
+            if (columnLength < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "columnLength");
+            }
+            int colMax = columnIndex + columnLength;
+            int rowMax = rowIndex + rowLength;
+
+            if (rowMax > RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowLength");
+            }
+
+            if (colMax > ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnLength");
+            }
+
+            Matrix result = CreateMatrix(rowLength, columnLength);
+            
+            CommonParallel.For(
+                columnIndex,
+                colMax,
+                j =>
+                {
+                    for (int i = rowIndex, ii = 0; i < rowMax; i++, ii++)
+                    {
+                        result.At(ii, j - columnIndex, At(i, j));
+                    }
+                });
+            return result;
+        }
+
+        public virtual IEnumerable<KeyValuePair<int, Vector>> ColumnEnumerator()
+        {
+            for (int i = 0; i < ColumnCount; i++)
+            {
+                yield return new KeyValuePair<int, Vector>(i, GetColumn(i));
+            }
+        }
+        /// <summary>
+        /// Returns an <see cref="IEnumerator{T}"/> that enumerates the requested matrix columns.
+        /// </summary>
+        /// <param name="index">The column to start enumerating over.</param>
+        /// <param name="length">The number of columns to enumerating over.</param>
+        /// <returns>An <see cref="IEnumerator{T}"/> that enumerates over requested matrix columns.</returns>
+        /// <seealso cref="IEnumerator{T}"/>
+        /// <exception cref="ArgumentOutOfRangeException">If:
+        /// <list><item><paramref name="index"/> is negative,
+        /// or greater than or equal to the number of columns.</item>        
+        /// <item><c>(index + length) &gt;= Columns.</c></item></list>
+        /// </exception>   
+        /// <exception cref="ArgumentException">If <paramref name="length"/> is not positive.</exception>     
+        public virtual IEnumerable<KeyValuePair<int, Vector>> ColumnEnumerator(int index, int length)
+        {
+            if (index >= this.ColumnCount || index < 0)
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
+
+            if (index + length > ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            if (length < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
+            }
+
+            int maxIndex = index + length;
+            for (int i = index; i < maxIndex; i++)
+            {
+                yield return new KeyValuePair<int, Vector>(i, GetColumn(i));
+            }
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerator{T}"/> that enumerates the requested matrix rows.
+        /// </summary>
+        /// <param name="index">The row to start enumerating over.</param>
+        /// <param name="length">The number of rows to enumerating over.</param>
+        /// <returns>An <see cref="IEnumerator{T}"/> that enumerates over requested matrix rows.</returns>
+        /// <seealso cref="IEnumerator{T}"/>
+        /// <exception cref="ArgumentOutOfRangeException">If:
+        /// <list><item><paramref name="index"/> is negative,
+        /// or greater than or equal to the number of rows.</item>        
+        /// <item><c>(index + length) &gt;= Rows.</c></item></list></exception>        
+        /// <exception cref="ArgumentException">If <paramref name="length"/> is not positive.</exception>     
+        public virtual IEnumerable<KeyValuePair<int, Vector>> RowEnumerator(int index, int length)
+        {
+            if (index >= RowCount || index < 0)
+            {
+                throw new ArgumentOutOfRangeException("index");
+            }
+            if (index + length > RowCount)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+            if (length < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
+            }
+            int maxi = index + length;
+            for (int i = index; i < maxi; i++)
+            {
+                yield return new KeyValuePair<int, Vector>(i, GetRow(i));
+            }
+        }
+
+        /// <summary>
+        /// Returns an <see cref="IEnumerator{T}"/> that enumerates over the matrix rows.
+        /// </summary>
+        /// <returns>An <see cref="IEnumerator{T}"/> that enumerates over the matrix rows</returns>
+        /// <seealso cref="IEnumerator{T}"/>        
+        public virtual IEnumerable<KeyValuePair<int, Vector>> RowEnumerator()
+        {
+            for (int i = 0; i < RowCount; i++)
+            {
+                yield return new KeyValuePair<int, Vector>(i, GetRow(i));
+            }
+        }
+
+        /// <summary>
+        /// Returns the elements of the diagonal in a <see cref="Vector"/>.
+        /// </summary>
+        /// <returns>The elements of the diagonal.</returns>
+        /// <remarks>For non-square matrices, the method returns Min(Rows, Columns) elements where
+        /// i == j (i is the row index, and j is the column index).</remarks>
+        public virtual Vector Diagonal()
+        {
+            int min = Math.Min(RowCount, ColumnCount);
+            Vector diagonal = CreateVector(min);
+            CommonParallel.For(
+                0,
+                min,
+                i =>
+                {
+                    diagonal[i] = At(i, i);
+                });
+            return diagonal;
+        }
+
+        /// <summary>
+        /// Returns a new matrix containing the lower triangle of this matrix. The new matrix
+        /// does not contain the diagonal elements of this matrix.
+        /// </summary>
+        /// <returns>The lower triangle of this matrix.</returns>
+        public virtual Matrix StrictlyLowerTriangle()
+        {
+            Matrix result = CreateMatrix(RowCount, ColumnCount);
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    for (int j = 0; j < ColumnCount; j++)
+                    {
+                        if (i > j)
+                        {
+                            result.At(i, j, At(i, j));
+                        }
+                    }
+                });
+            return result;
+        }
+
+        /// <summary>
+        /// Puts the strictly lower triangle of this matrix into the result matrix.
+        /// </summary>
+        /// <param name="result">Where to store the lower triangle.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="result"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">If the result matrix's dimensions are not the same as this matrix.</exception>
+        public virtual void StrictlyLowerTriangle(Matrix result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException("result");
+            }
+
+            if (result.RowCount != RowCount || result.ColumnCount != ColumnCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions, "result");
+            }
+
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    for (int j = 0; j < ColumnCount; j++)
+                    {
+                        if (i > j)
+                            result.At(i, j, At(i, j));
+                        else
+                            result.At(i, j, 0);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Returns a new matrix containing the upper triangle of this matrix. The new matrix
+        /// does not contain the diagonal elements of this matrix.
+        /// </summary>
+        /// <returns>The upper triangle of this matrix.</returns>
+        public virtual Matrix StrictlyUpperTriangle()
+        {
+            Matrix result = CreateMatrix(RowCount, ColumnCount);
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    for (int j = 0; j < ColumnCount; j++)
+                    {
+                        if (i < j)
+                        {
+                            result.At(i, j, At(i, j));
+                        }
+                    }
+                });
+            return result;
+        }
+
+        /// <summary>
+        /// Puts the strictly upper triangle of this matrix into the result matrix.
+        /// </summary>
+        /// <param name="result">Where to store the lower triangle.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="result"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">If the result matrix's dimensions are not the same as this matrix.</exception>
+        public virtual void StrictlyUpperTriangle(Matrix result)
+        {
+            if (result == null)
+            {
+                throw new ArgumentNullException("result");
+            }
+
+            if (result.RowCount != RowCount || result.ColumnCount != ColumnCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions, "result");
+            }
+
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    for (int j = 0; j < ColumnCount; j++)
+                    {
+                        if (i < j)
+                            result.At(i, j, At(i, j));
+                        else
+                            result.At(i, j, 0);
+                    }
+                });
+        }
+
 
         #region Implemented Interfaces
 

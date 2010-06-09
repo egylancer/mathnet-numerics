@@ -33,6 +33,7 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
 	using System;
 	using LinearAlgebra.Double;
 	using MbUnit.Framework;
+    using System.Collections.Generic;
 
     [TestFixture]
     public abstract partial class MatrixTests : MatrixLoader
@@ -478,6 +479,451 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
                 for (var j = 0; j < matrix.ColumnCount; j++)
                 {
                     Assert.AreEqual(matrix[i, j], transpose[j, i]);
+                }
+            }
+        }
+
+        [Test]
+        public void ColumnEnumerator()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                foreach (KeyValuePair<int, Vector> column in data.ColumnEnumerator())
+                {
+                    int i = 0;
+                    foreach (double value in column.Value)
+                    {
+                        Assert.AreEqual(data[i++, column.Key], value);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row(0, 2)]
+        [Row(1, 1)]
+        [Row(-1, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(4, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 4, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, -1, ExpectedException = typeof(ArgumentException))]
+        [MultipleAsserts]
+        public void ColumnEnumeratorRange(int colStart, int count)
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                foreach (KeyValuePair<int, Vector> column in data.ColumnEnumerator(colStart, count))
+                {
+                    int i = 0;
+                    foreach (double value in column.Value)
+                    {
+                        Assert.AreEqual(data[i++, column.Key], value);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void RowEnumerator()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                foreach (KeyValuePair<int, Vector> row in data.RowEnumerator())
+                {
+                    int j = 0;
+                    foreach (double value in row.Value)
+                    {
+                        Assert.AreEqual(data[row.Key, j++], value);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row(0, 2)]
+        [Row(1, 1)]
+        [Row(-1, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(4, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 4, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, -1, ExpectedException = typeof(ArgumentException))]
+        public void RowEnumeratorRange(int start, int length)
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                foreach (KeyValuePair<int, Vector> row in data.RowEnumerator(start, length))
+                {
+                    int j = 0;
+                    foreach (double value in row.Value)
+                    {
+                        Assert.AreEqual(data[row.Key, j++], value);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row("Singular3x3", new double[]{1,1,2})]
+        [Row("Square3x3", new double[] { -1.1, 1.1, 6.6 })]
+        [Row("Square4x4", new double[] { -1.1, 1.1, 6.2, -7.7 })]
+        [Row("Tall3x2", new double[] { -1.1, 1.1})]
+        [Row("Wide2x3", new  double[] { -1.1, 1.1})]                      
+        [MultipleAsserts]
+        public void Diagonal(string name, double[] expectedDiagonal)
+        {
+            Matrix data = testMatrices[name];
+            Vector result = data.Diagonal();
+            Vector expected = CreateVector(expectedDiagonal);
+            Assert.AreEqual(expected.Count, result.Count);
+            for (int i = 0; i < expected.Count; i++)
+            {
+                Assert.AreEqual(expected[i], result[i]);
+            }
+        }
+
+        [Test]
+        [Row("Singular3x3")]
+        [Row("Square3x3")]
+        [Row("Square4x4")]
+        [Row("Singular4x4")]
+        [Row("Tall3x2")]
+        [Row("Wide2x3")]
+        [MultipleAsserts]
+        public void LowerTriangle(string name)
+        {
+            Matrix data = testMatrices[name];
+            Matrix lower = data.GetLowerTriangle();
+            for (int i = 0; i < data.RowCount; i++)
+            {
+                for (int j = 0; j < data.ColumnCount; j++)
+                {
+                    if (i >= j)
+                    {
+                        Assert.AreEqual(data[i, j],
+                                        lower[i, j]);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, lower[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row("Singular3x3")]
+        [Row("Square3x3")]
+        [Row("Square4x4")]
+        [Row("Singular4x4")]
+        [Row("Tall3x2")]
+        [Row("Wide2x3")]
+        [MultipleAsserts]
+        public void LowerTriangleResult(string name)
+        {
+            Matrix data = testMatrices[name];
+            Matrix result = CreateMatrix(data.RowCount, data.ColumnCount);
+            Matrix lower = data.GetLowerTriangle();
+            for (int i = 0; i < data.RowCount; i++)
+            {
+                for (int j = 0; j < data.ColumnCount; j++)
+                {
+                    if (i >= j)
+                    {
+                        Assert.AreEqual(data[i, j],
+                                        lower[i, j]);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, lower[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void LowerTriangleWithResultNullShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = null;
+            data.GetLowerTriangle(result);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void LowerTriangleWithUnEqualRowsShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = CreateMatrix(data.RowCount+1, data.ColumnCount);
+            data.GetLowerTriangle(result);
+        }
+        [Test]
+
+        [ExpectedArgumentException]
+        public void LowerTriangleWithUnEqualColumnsShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = CreateMatrix(data.RowCount, data.ColumnCount + 1);
+            data.GetLowerTriangle(result);
+        }
+         
+        [Test]
+        [Row("Singular3x3")]
+        [Row("Square3x3")]
+        [Row("Square4x4")]
+        [Row("Singular4x4")]
+        [Row("Tall3x2")]
+        [Row("Wide2x3")]
+        [MultipleAsserts]
+        public void UpperTriangle(string name)
+        {
+            Matrix data = testMatrices[name];
+            Matrix lower = data.GetUpperTriangle();
+            for (int i = 0; i < data.RowCount; i++)
+            {
+                for (int j = 0; j < data.ColumnCount; j++)
+                {
+                    if (i <= j)
+                    {
+                        Assert.AreEqual(data[i, j],
+                                        lower[i, j]);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, lower[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row("Singular3x3")]
+        [Row("Square3x3")]
+        [Row("Square4x4")]
+        [Row("Singular4x4")]
+        [Row("Tall3x2")]
+        [Row("Wide2x3")]
+        [MultipleAsserts]
+        public void UpperrTriangleResult(string name)
+        {
+            Matrix data = testMatrices[name];
+            Matrix result = CreateMatrix(data.RowCount, data.ColumnCount);
+            Matrix lower = data.GetUpperTriangle();
+            for (int i = 0; i < data.RowCount; i++)
+            {
+                for (int j = 0; j < data.ColumnCount; j++)
+                {
+                    if (i <= j)
+                    {
+                        Assert.AreEqual(data[i, j],
+                                        lower[i, j]);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, lower[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void UpperTriangleWithResultNullShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = null;
+            data.GetUpperTriangle(result);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void UpperTriangleWithUnEqualRowsShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = CreateMatrix(data.RowCount+1, data.ColumnCount);
+            data.GetUpperTriangle(result);
+        }
+        [Test]
+
+        [ExpectedArgumentException]
+        public void UpperTriangleWithUnEqualColumnsShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix result = CreateMatrix(data.RowCount, data.ColumnCount + 1);
+            data.GetUpperTriangle(result);
+        }
+
+        [Test]
+        public void StrictlyLowerTriangle()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                Matrix lower = data.StrictlyLowerTriangle();
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        if (i > j)
+                        {
+                            Assert.AreEqual(data[i, j], lower[i, j]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, lower[i, j]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void StrictlyLowerTriangleResult()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                Matrix lower = CreateMatrix(data.RowCount, data.ColumnCount);
+                data.StrictlyLowerTriangle(lower);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        if (i > j)
+                        {
+                            Assert.AreEqual(data[i, j], lower[i, j]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, lower[i, j]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void StrictlyLowerTriangleWithNullParameterShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = null;
+            data.StrictlyLowerTriangle(lower);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void StrictlyLowerTriangleWithInvalidColumnNumberShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = CreateMatrix(data.RowCount, data.ColumnCount + 1);
+            data.StrictlyLowerTriangle(lower);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void StrictlyLowerTriangleWithInvalidRowNumberShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = CreateMatrix(data.RowCount +1, data.ColumnCount);
+            data.StrictlyLowerTriangle(lower);
+        }
+
+       
+        [Test]
+        public void StrictlyUpperTriangle()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                Matrix lower = data.StrictlyUpperTriangle();
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        if (i < j)
+                        {
+                            Assert.AreEqual(data[i, j], lower[i, j]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, lower[i, j]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void StrictlyUpperTriangleResult()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                Matrix lower = CreateMatrix(data.RowCount, data.ColumnCount);
+                data.StrictlyUpperTriangle(lower);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        if (i < j)
+                        {
+                            Assert.AreEqual(data[i, j], lower[i, j]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, lower[i, j]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void StrictlyUpperTriangleWithNullParameterShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = null;
+            data.StrictlyUpperTriangle(lower);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void StrictlyUpperTriangleWithInvalidColumnNumberShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = CreateMatrix(data.RowCount, data.ColumnCount + 1);
+            data.StrictlyUpperTriangle(lower);
+        }
+
+        [Test]
+        [ExpectedArgumentException]
+        public void StrictlyUpperTriangleWithInvalidRowNumberShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix lower = CreateMatrix(data.RowCount +1, data.ColumnCount);
+            data.StrictlyUpperTriangle(lower);
+        }
+
+        [Test]
+        [Row(0, 2, 0, 2)]
+        [Row(1, 1, 1, 1)]
+        [Row(0, 4, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, 0, 4, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(4, 2, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, 4, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(-1, 2, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, -1, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, -1, 0, 2, ExpectedException = typeof(ArgumentException))]
+        [Row(0, 2, 0, -1, ExpectedException = typeof(ArgumentException))]
+        public void GetSubMatrix(int rowStart, int rowLength, int colStart, int colLength)
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                Matrix subMatrix = data.SubMatrix(rowStart, rowLength, colStart, colLength);
+                Assert.AreEqual(rowLength, subMatrix.RowCount);
+                Assert.AreEqual(colLength, subMatrix.ColumnCount);
+                for (int i = rowStart, ii = 0; i < rowLength; i++, ii++)
+                {
+                    for (int j = colStart, jj = 0; j < colLength; j++, jj++)
+                    {
+                        Assert.AreEqual(data[i, j], subMatrix[ii, jj]);
+                    }
                 }
             }
         }
