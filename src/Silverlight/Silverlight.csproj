@@ -227,8 +227,14 @@
     <Compile Include="..\Numerics\LinearAlgebra\Double\Factorization\DenseCholesky.cs">
       <Link>LinearAlgebra\Double\Factorization\DenseCholesky.cs</Link>
     </Compile>
+    <Compile Include="..\Numerics\LinearAlgebra\Double\Factorization\DenseLU.cs">
+      <Link>LinearAlgebra\Double\Factorization\DenseLU.cs</Link>
+    </Compile>
     <Compile Include="..\Numerics\LinearAlgebra\Double\Factorization\ExtensionMethods.cs">
       <Link>LinearAlgebra\Double\Factorization\ExtensionMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\Numerics\LinearAlgebra\Double\Factorization\LU.cs">
+      <Link>LinearAlgebra\Double\Factorization\LU.cs</Link>
     </Compile>
     <Compile Include="..\Numerics\LinearAlgebra\Double\Matrix.Arithmetic.cs">
       <Link>LinearAlgebra\Double\Matrix.Arithmetic.cs</Link>
@@ -244,6 +250,9 @@
     </Compile>
     <Compile Include="..\Numerics\NumberTheory\IntegerTheory.Euclid.cs">
       <Link>NumberTheory\IntegerTheory.Euclid.cs</Link>
+    </Compile>
+    <Compile Include="..\Numerics\Permutation.cs">
+      <Link>Permutation.cs</Link>
     </Compile>
     <Compile Include="..\Numerics\Precision.cs">
       <Link>Precision.cs</Link>

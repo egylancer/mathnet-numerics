@@ -46,6 +46,9 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double.Factorization
             var I = DenseMatrix.Identity(order);
             var C = I.Cholesky();
 
+            Assert.AreEqual(I.RowCount, C.Factor.RowCount);
+            Assert.AreEqual(I.ColumnCount, C.Factor.ColumnCount);
+
             for (var i = 0; i < C.Factor.RowCount; i++)
             {
                 for (var j = 0; j < C.Factor.ColumnCount; j++)

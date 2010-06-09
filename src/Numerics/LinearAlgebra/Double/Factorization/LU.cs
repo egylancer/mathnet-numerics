@@ -96,6 +96,14 @@ namespace MathNet.Numerics.LinearAlgebra.Double.Factorization
         }
 
         /// <summary>
+        /// Return the permutation applied to LU factorization.
+        /// </summary>
+        public virtual Permutation P
+        {
+            get { return Permutation.FromInversions(mPivots); }
+        }
+
+        /// <summary>
         /// The determinant of the matrix for which the LU factorization was computed.
         /// </summary>
         public virtual double Determinant
