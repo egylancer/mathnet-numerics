@@ -37,9 +37,9 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
     /// </summary>
     public class AtlasLinearAlgebraProvider : ILinearAlgebraProvider
     {
-		private readonly ILinearAlgebraProvider _managedProvider = new ManagedLinearAlgebraProvider();
- 
-		#region ILinearAlgebraProvider<double> Members
+        private readonly ILinearAlgebraProvider _managedProvider = new ManagedLinearAlgebraProvider();
+
+        #region ILinearAlgebraProvider<double> Members
 
         /// <summary>
         /// Adds a scaled vector to another: <c>y += alpha*x</c>.
@@ -84,8 +84,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             if (x == null)
             {
                 throw new ArgumentNullException("x");
-            } 
-            
+            }
+
             if (alpha == 1.0)
             {
                 return;
@@ -147,13 +147,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.AddArrays(x, y, result);
+
+            _managedProvider.AddArrays(x, y, result);
         }
 
         /// <summary>
@@ -182,13 +182,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.SubtractArrays(x, y, result);
+
+            _managedProvider.SubtractArrays(x, y, result);
         }
 
         /// <summary>
@@ -217,13 +217,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.PointWiseMultiplyArrays(x, y, result);
+
+            _managedProvider.PointWiseMultiplyArrays(x, y, result);
         }
 
         /// <summary>
@@ -285,8 +285,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="bColumns">The number of columns in the <paramref name="b"/> matrix.</param>
         /// <param name="beta">The value to scale the <paramref name="c"/> matrix.</param>
         /// <param name="c">The c matrix.</param>
-        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, double alpha, double[] a, 
-			int aRows, int aColumns, double[] b, int bRows, int bColumns, double beta, double[] c)
+        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, double alpha, double[] a,
+            int aRows, int aColumns, double[] b, int bRows, int bColumns, double beta, double[] c)
         {
             if (a == null)
             {
@@ -307,9 +307,9 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             var n = transposeB == Transpose.DontTranspose ? bColumns : bRows;
             var k = transposeA == Transpose.DontTranspose ? aColumns : aRows;
 
-            if( c.Length != aRows * bColumns)
+            if (c.Length != aRows * bColumns)
             {
-                throw new ArgumentException(Resources.ArgumentMatrixDimensions);   
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions);
             }
 
             if (aColumns != bRows)
@@ -319,7 +319,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
 
             SafeNativeMethods.d_matrix_multiply(transposeA, transposeB, m, n, k, alpha, a, b, beta, c);
         }
-		
+
         /// <summary>
         /// Computes the LUP factorization of A. P*A = L*U.
         /// </summary>
@@ -447,23 +447,23 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentNullException("a");
             }
-            
-			if ( order < 1)
+
+            if (order < 1)
             {
                 throw new ArgumentException(Properties.Resources.ArgumentMustBePositive, "order");
             }
-			
-			SafeNativeMethods.d_cholesky_factor(order, a);
+
+            SafeNativeMethods.d_cholesky_factor(order, a);
         }
-        
+
         /// <summary>
         /// Solves A*X=B for X using Cholesky factorization.
         /// </summary>
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRF add POTRS LAPACK routines.</remarks>
         public void CholeskySolve(double[] a, int aOrder, double[] b, int bRows, int bColumns)
         {
@@ -476,8 +476,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRS LAPACK routine.</remarks>
         public void CholeskySolveFactored(double[] a, int aOrder, double[] b, int bRows, int bColumns)
         {
@@ -686,7 +686,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentNullException("x");
             }
-            
+
             if (alpha == 1.0)
             {
                 return;
@@ -748,13 +748,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.AddArrays(x, y, result);
+
+            _managedProvider.AddArrays(x, y, result);
         }
 
         /// <summary>
@@ -783,13 +783,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.SubtractArrays(x, y, result);
+
+            _managedProvider.SubtractArrays(x, y, result);
         }
 
         /// <summary>
@@ -818,13 +818,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.PointWiseMultiplyArrays(x, y, result);
+
+            _managedProvider.PointWiseMultiplyArrays(x, y, result);
         }
 
         /// <summary>
@@ -886,8 +886,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="bColumns">The number of columns in the <paramref name="b"/> matrix.</param>
         /// <param name="beta">The value to scale the <paramref name="c"/> matrix.</param>
         /// <param name="c">The c matrix.</param>
-        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, float alpha, float[] a, 
-			int aRows, int aColumns, float[] b, int bRows, int bColumns, float beta, float[] c)
+        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, float alpha, float[] a,
+            int aRows, int aColumns, float[] b, int bRows, int bColumns, float beta, float[] c)
         {
             if (a == null)
             {
@@ -908,9 +908,9 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             var n = transposeB == Transpose.DontTranspose ? bColumns : bRows;
             var k = transposeA == Transpose.DontTranspose ? aColumns : aRows;
 
-            if( c.Length != aRows * bColumns)
+            if (c.Length != aRows * bColumns)
             {
-                throw new ArgumentException(Resources.ArgumentMatrixDimensions);   
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions);
             }
 
             if (aColumns != bRows)
@@ -920,7 +920,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
 
             SafeNativeMethods.s_matrix_multiply(transposeA, transposeB, m, n, k, alpha, a, b, beta, c);
         }
-		
+
         /// <summary>
         /// Computes the LUP factorization of A. P*A = L*U.
         /// </summary>
@@ -1048,23 +1048,23 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentNullException("a");
             }
-            
-			if ( order < 1)
+
+            if (order < 1)
             {
                 throw new ArgumentException(Properties.Resources.ArgumentMustBePositive, "order");
             }
-			
-			SafeNativeMethods.s_cholesky_factor(order, a);
+
+            SafeNativeMethods.s_cholesky_factor(order, a);
         }
-        
+
         /// <summary>
         /// Solves A*X=B for X using Cholesky factorization.
         /// </summary>
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRF add POTRS LAPACK routines.</remarks>
         public void CholeskySolve(float[] a, int aOrder, float[] b, int bRows, int bColumns)
         {
@@ -1077,8 +1077,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRS LAPACK routine.</remarks>
         public void CholeskySolveFactored(float[] a, int aOrder, float[] b, int bRows, int bColumns)
         {
@@ -1286,7 +1286,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             if (x == null)
             {
                 throw new ArgumentNullException("x");
-            } 
+            }
 
             if (alpha.IsOne())
             {
@@ -1349,13 +1349,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.AddArrays(x, y, result);
+
+            _managedProvider.AddArrays(x, y, result);
         }
 
         /// <summary>
@@ -1384,13 +1384,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.SubtractArrays(x, y, result);
+
+            _managedProvider.SubtractArrays(x, y, result);
         }
 
         /// <summary>
@@ -1419,13 +1419,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.PointWiseMultiplyArrays(x, y, result);
+
+            _managedProvider.PointWiseMultiplyArrays(x, y, result);
         }
 
         /// <summary>
@@ -1487,8 +1487,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="bColumns">The number of columns in the <paramref name="b"/> matrix.</param>
         /// <param name="beta">The value to scale the <paramref name="c"/> matrix.</param>
         /// <param name="c">The c matrix.</param>
-        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, Complex alpha, Complex[] a, 
-			int aRows, int aColumns, Complex[] b, int bRows, int bColumns, Complex beta, Complex[] c)
+        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, Complex alpha, Complex[] a,
+            int aRows, int aColumns, Complex[] b, int bRows, int bColumns, Complex beta, Complex[] c)
         {
             if (a == null)
             {
@@ -1509,9 +1509,9 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             var n = transposeB == Transpose.DontTranspose ? bColumns : bRows;
             var k = transposeA == Transpose.DontTranspose ? aColumns : aRows;
 
-            if( c.Length != aRows * bColumns)
+            if (c.Length != aRows * bColumns)
             {
-                throw new ArgumentException(Resources.ArgumentMatrixDimensions);   
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions);
             }
 
             if (aColumns != bRows)
@@ -1521,7 +1521,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
 
             SafeNativeMethods.z_matrix_multiply(transposeA, transposeB, m, n, k, ref alpha, a, b, ref beta, c);
         }
-		
+
         /// <summary>
         /// Computes the LUP factorization of A. P*A = L*U.
         /// </summary>
@@ -1649,23 +1649,23 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentNullException("a");
             }
-            
-			if ( order < 1)
+
+            if (order < 1)
             {
                 throw new ArgumentException(Properties.Resources.ArgumentMustBePositive, "order");
             }
-			
-			SafeNativeMethods.z_cholesky_factor(order, a);
+
+            SafeNativeMethods.z_cholesky_factor(order, a);
         }
-        
+
         /// <summary>
         /// Solves A*X=B for X using Cholesky factorization.
         /// </summary>
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRF add POTRS LAPACK routines.</remarks>
         public void CholeskySolve(Complex[] a, int aOrder, Complex[] b, int bRows, int bColumns)
         {
@@ -1678,8 +1678,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRS LAPACK routine.</remarks>
         public void CholeskySolveFactored(Complex[] a, int aOrder, Complex[] b, int bRows, int bColumns)
         {
@@ -1841,7 +1841,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         }
 
         #endregion
-        
+
         #region ILinearAlgebraProvider<Complex32> Members
 
         /// <summary>
@@ -1887,7 +1887,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             if (x == null)
             {
                 throw new ArgumentNullException("x");
-            } 
+            }
 
             if (alpha.IsOne())
             {
@@ -1950,13 +1950,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.AddArrays(x, y, result);
+
+            _managedProvider.AddArrays(x, y, result);
         }
 
         /// <summary>
@@ -1985,13 +1985,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.SubtractArrays(x, y, result);
+
+            _managedProvider.SubtractArrays(x, y, result);
         }
 
         /// <summary>
@@ -2020,13 +2020,13 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
+
             if (x.Length != result.Length)
             {
                 throw new ArgumentException(Resources.ArgumentArraysSameLength);
             }
-            
-			_managedProvider.PointWiseMultiplyArrays(x, y, result);
+
+            _managedProvider.PointWiseMultiplyArrays(x, y, result);
         }
 
         /// <summary>
@@ -2088,8 +2088,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="bColumns">The number of columns in the <paramref name="b"/> matrix.</param>
         /// <param name="beta">The value to scale the <paramref name="c"/> matrix.</param>
         /// <param name="c">The c matrix.</param>
-        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, Complex32 alpha, Complex32[] a, 
-			int aRows, int aColumns, Complex32[] b, int bRows, int bColumns, Complex32 beta, Complex32[] c)
+        public void MatrixMultiplyWithUpdate(Transpose transposeA, Transpose transposeB, Complex32 alpha, Complex32[] a,
+            int aRows, int aColumns, Complex32[] b, int bRows, int bColumns, Complex32 beta, Complex32[] c)
         {
             if (a == null)
             {
@@ -2110,9 +2110,9 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             var n = transposeB == Transpose.DontTranspose ? bColumns : bRows;
             var k = transposeA == Transpose.DontTranspose ? aColumns : aRows;
 
-            if( c.Length != aRows * bColumns)
+            if (c.Length != aRows * bColumns)
             {
-                throw new ArgumentException(Resources.ArgumentMatrixDimensions);   
+                throw new ArgumentException(Resources.ArgumentMatrixDimensions);
             }
 
             if (aColumns != bRows)
@@ -2122,7 +2122,7 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
 
             SafeNativeMethods.c_matrix_multiply(transposeA, transposeB, m, n, k, ref alpha, a, b, ref beta, c);
         }
-		
+
         /// <summary>
         /// Computes the LUP factorization of A. P*A = L*U.
         /// </summary>
@@ -2250,23 +2250,23 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
             {
                 throw new ArgumentNullException("a");
             }
-            
-			if ( order < 1)
+
+            if (order < 1)
             {
                 throw new ArgumentException(Properties.Resources.ArgumentMustBePositive, "order");
             }
-			
-			SafeNativeMethods.c_cholesky_factor(order, a);
+
+            SafeNativeMethods.c_cholesky_factor(order, a);
         }
-        
+
         /// <summary>
         /// Solves A*X=B for X using Cholesky factorization.
         /// </summary>
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRF add POTRS LAPACK routines.</remarks>
         public void CholeskySolve(Complex32[] a, int aOrder, Complex32[] b, int bRows, int bColumns)
         {
@@ -2279,8 +2279,8 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
         /// <param name="a">The square, positive definite matrix A.</param>
         /// <param name="aOrder">The number of rows and columns in A.</param>
         /// <param name="b">The B matrix.</param>
-		/// <param name="bRows">The number of rows in the B matrix.</param>
-		/// <param name="bColumns">The number of columns in the B matrix.</param>
+        /// <param name="bRows">The number of rows in the B matrix.</param>
+        /// <param name="bColumns">The number of columns in the B matrix.</param>
         /// <remarks>This is equivalent to the POTRS LAPACK routine.</remarks>
         public void CholeskySolveFactored(Complex32[] a, int aOrder, Complex32[] b, int bRows, int bColumns)
         {
@@ -2443,44 +2443,5 @@ namespace MathNet.Numerics.Algorithms.LinearAlgebra.Atlas
 
         #endregion
 
-        #region ILinearAlgebraProvider<double> Members
-
-
-        public void LUFactor(double[] a, int aOrder, int[] ipiv)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region ILinearAlgebraProvider<float> Members
-
-
-        public void LUFactor(float[] a, int aOrder, int[] ipiv)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region ILinearAlgebraProvider<Complex> Members
-
-
-        public void LUFactor(Complex[] a, int aOrder, int[] ipiv)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region ILinearAlgebraProvider<Complex32> Members
-
-
-        public void LUFactor(Complex32[] a, int aOrder, int[] ipiv)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-    }
+    }     
 }
