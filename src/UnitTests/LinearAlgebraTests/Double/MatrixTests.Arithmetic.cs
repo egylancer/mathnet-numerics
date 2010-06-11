@@ -33,6 +33,7 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
 	using System;
 	using LinearAlgebra.Double;
 	using MbUnit.Framework;
+    using MathNet.Numerics.Distributions;
 
     public abstract partial class MatrixTests
     {
@@ -811,6 +812,360 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
             Matrix result = CreateMatrix(top.RowCount + lower.RowCount + 2, top.ColumnCount + lower.ColumnCount);
             top.DiagonalStack(lower, result);
 
+        }
+
+        [Test]
+        public void KroneckerProduct()
+        {
+            Matrix A = testMatrices["Wide2x3"];
+            Matrix B = testMatrices["Square3x3"];
+            Matrix result = CreateMatrix(A.RowCount * B.RowCount, A.ColumnCount * B.ColumnCount);
+            A.KroneckerProduct(B, result);
+            for (int i = 0; i < A.RowCount; i++)
+            {
+                for (int j = 0; j < A.ColumnCount; j++)
+                {
+                    for (int ii = 0; ii < B.RowCount; ii++)
+                    {
+                        for (int jj = 0; jj < B.ColumnCount; jj++)
+                        {
+                            Assert.AreEqual(result[i * B.RowCount + ii, j * B.ColumnCount + jj], A[i, j] * B[ii, jj]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void KroneckerProductResult()
+        {
+            Matrix A = testMatrices["Wide2x3"];
+            Matrix B = testMatrices["Square3x3"];
+            Matrix result = A.KroneckerProduct(B);
+            for (int i = 0; i < A.RowCount; i++)
+            {
+                for (int j = 0; j < A.ColumnCount; j++)
+                {
+                    for (int ii = 0; ii < B.RowCount; ii++)
+                    {
+                        for (int jj = 0; jj < B.ColumnCount; jj++)
+                        {
+                            Assert.AreEqual(result[i * B.RowCount + ii, j * B.ColumnCount + jj], A[i, j] * B[ii, jj]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [Row(1)]
+        [Row(2)]
+        [Row(-4,ExpectedException=typeof(ArgumentOutOfRangeException))]
+        public void NormalizeColumns(int pValue)
+        {
+            Matrix matrix = testMatrices["Singular3x3"];
+            Matrix result = matrix.NormalizeColumns(pValue);
+            for (int j = 0; j < result.ColumnCount; j++)
+            {
+                Vector col = result.GetColumn(j);
+                Assert.AreApproximatelyEqual<double, double>(1.0, col.NormP(pValue), 10e-12);
+            }
+        }
+
+        [Test]
+        [Row(1)]
+        [Row(2)]
+        [Row(-3,ExpectedException= typeof(ArgumentOutOfRangeException))]
+        public void NormalizeRows(int pValue)
+        {
+            Matrix matrix = testMatrices["Singular3x3"].NormalizeRows(pValue);
+            for (int i = 0; i < matrix.RowCount; i++)
+            {
+                Vector row = matrix.GetRow(i);
+                Assert.AreApproximatelyEqual<double, double>(1.0, row.NormP(pValue), 10e-12);
+            }
+        }
+
+        [Test]
+        public void PointwiseMultiplyResult()
+        {
+            foreach (Matrix  data in testMatrices.Values)
+            {
+                Matrix other = data.Clone();
+                Matrix result = data.Clone();
+                data.PointwiseMultiply(other, result);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] * other[i, j], result[i, j]);
+                    }
+                }
+
+                result = data.PointwiseMultiply(other);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] * other[i, j], result[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseMultiplyWithNullOtherShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = null;
+            Matrix result = matrix.Clone();
+            matrix.PointwiseMultiply(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseMultiplyWithResultNullShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            matrix.PointwiseMultiply(other, null);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseMultiplyWithInvalidOtherMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            Matrix result = matrix.Clone();
+            matrix.PointwiseMultiply(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseMultiplyWithInvalidResultMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            Matrix result = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            matrix.PointwiseMultiply(other, result);
+        }
+
+        [Test]
+        public void PointwiseAddResult()
+        {
+            foreach (Matrix  data in testMatrices.Values)
+            {
+                Matrix other = data.Clone();
+                Matrix result = data.Clone();
+                data.PointwiseAdd(other, result);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] + other[i, j], result[i, j]);
+                    }
+                }
+
+                result = data.PointwiseAdd(other);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] + other[i, j], result[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseAddWithNullOtherShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = null;
+            Matrix result = matrix.Clone();
+            matrix.PointwiseAdd(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseAddWithResultNullShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            matrix.PointwiseAdd(other, null);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseAddWithInvalidOtherMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            Matrix result = matrix.Clone();
+            matrix.PointwiseAdd(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseAddWithInvalidResultMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            Matrix result = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            matrix.PointwiseAdd(other, result);
+        }
+
+        [Test]
+        public void PointwiseSubtractResult()
+        {
+            foreach (Matrix  data in testMatrices.Values)
+            {
+                Matrix other = data.Clone();
+                Matrix result = data.Clone();
+                data.PointwiseSubtract(other, result);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] - other[i, j], result[i, j]);
+                    }
+                }
+
+                result = data.PointwiseSubtract(other);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] - other[i, j], result[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseSubtractWithNullOtherShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = null;
+            Matrix result = matrix.Clone();
+            matrix.PointwiseSubtract(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseSubtractWithResultNullShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            matrix.PointwiseSubtract(other, null);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseSubtractWithInvalidOtherMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            Matrix result = matrix.Clone();
+            matrix.PointwiseSubtract(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseSubtractWithInvalidResultMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            Matrix result = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            matrix.PointwiseSubtract(other, result);
+        }
+
+        [Test]
+        public void PointwiseDivideIResult()
+        {
+            foreach (Matrix  data in testMatrices.Values)
+            {
+                Matrix other = data.Clone();
+                Matrix result = data.Clone();
+                data.PointwiseDivide(other, result);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j]/other[i, j], result[i, j]);
+                    }
+                }
+
+                result = data.PointwiseDivide(other);
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j] / other[i, j], result[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseDivideWithNullOtherShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = null;
+            Matrix result = matrix.Clone();
+            matrix.PointwiseDivide(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void PointwiseDivideWithResultNullShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            matrix.PointwiseDivide(other, null);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseDivideWithInvalidOtherMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            Matrix result = matrix.Clone();
+            matrix.PointwiseDivide(other, result);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PointwiseDivideWithInvalidResultMatrixDimensionsShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Wide2x3"];
+            Matrix other = matrix.Clone();
+            Matrix result = CreateMatrix(matrix.RowCount+1, matrix.ColumnCount);
+            matrix.PointwiseDivide(other, result);
+        }
+
+        [Test]
+        [Row(0,ExpectedException = typeof(ArgumentException))]
+        [Row(-2, ExpectedException = typeof(ArgumentException))]
+        public void RandomWithNonPositiveNumberOfRowsShouldThrowException(int numberOfRows)
+        {
+            Matrix matrix = CreateMatrix(2, 3);
+            matrix = matrix.Random(numberOfRows,4,new ContinuousUniform());
+        }
+
+        [Test]
+        [Row(0, ExpectedException = typeof(ArgumentException))]
+        [Row(-2, ExpectedException = typeof(ArgumentException))]
+        public void RandomWithNonPositiveNumberOfRowsShouldThrowException2(int numberOfRows)
+        {
+            Matrix matrix = CreateMatrix(2, 3);
+            matrix = matrix.Random(numberOfRows, 4, new DiscreteUniform(0,2));
         }
     }
 }

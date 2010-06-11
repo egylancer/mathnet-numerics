@@ -400,7 +400,7 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
         public void RandomWithNumberOfElementsLessThanZeroShouldThrowException()
         {
             var vector = this.CreateVector(4);
-            vector = vector.Random(-3, new ContinuousUniform());
+            vector = vector.Random(-2, new ContinuousUniform());
         }
 
         protected abstract Vector CreateVector(int size);

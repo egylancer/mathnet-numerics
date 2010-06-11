@@ -31,11 +31,11 @@
 namespace MathNet.Numerics.LinearAlgebra.Double
 {
     using System;
-    using System.Text;
-    using Properties;
-    using MathNet.Numerics.Threading;
     using System.Collections.Generic;
-
+    using System.Text;
+    using MathNet.Numerics.Threading;
+    using Properties;
+    
     /// <summary>
     /// Defines the base class for <c>Matrix</c> classes.
     /// </summary>
@@ -465,13 +465,16 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         public virtual Matrix GetLowerTriangle()
         {
             Matrix ret = CreateMatrix(RowCount, ColumnCount);
-            CommonParallel.For(0, ColumnCount, j =>
-            {
-                for (int i = j; i < RowCount; i++)
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                j =>
                 {
-                    ret.At(i, j, At(i, j));
-                }
-            });
+                    for (int i = j; i < RowCount; i++)
+                    {
+                        ret.At(i, j, At(i, j));
+                    }
+                });
             return ret;
         }
 
@@ -493,20 +496,23 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 throw new ArgumentException(Resources.ArgumentMatrixDimensions, "result");
             }
 
-            CommonParallel.For(0, ColumnCount, j =>
-            {
-                for (int i = 0; i < RowCount; i++)
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                j =>
                 {
-                    if (i >= j)
+                    for (int i = 0; i < RowCount; i++)
                     {
-                        result.At(i, j, At(i, j));
+                        if (i >= j)
+                        {
+                            result.At(i, j, At(i, j));
+                        }
+                        else
+                        {
+                            result.At(i, j, 0);
+                        }
                     }
-                    else
-                    {
-                        result.At(i, j, 0);
-                    }
-                }
-            });
+                });
         }
         
         /// <summary>
@@ -516,13 +522,19 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         public virtual Matrix GetUpperTriangle()
         {
             Matrix ret = CreateMatrix(RowCount, ColumnCount);
-            CommonParallel.For(0, ColumnCount, j =>
-            {
-                for (int i = 0; i <= j; i++)
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                j =>
                 {
-                    ret.At(i, j, At(i, j));
-                }
-            });
+                    for (int i = 0; i < RowCount; i++)
+                    {
+                        if (i <= j)
+                        {
+                            ret.At(i, j, At(i, j));
+                        }
+                    }
+                });
             return ret;
         }
 
@@ -544,20 +556,23 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 throw new ArgumentException(Resources.ArgumentMatrixDimensions, "result");
             }
 
-            CommonParallel.For(0, ColumnCount, j =>
-            {
-                for (int i = 0; i < RowCount; i++)
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                j =>
                 {
-                    if (i <= j)
+                    for (int i = 0; i < RowCount; i++)
                     {
-                        result.At(i, j, At(i, j));
+                        if (i <= j)
+                        {
+                            result.At(i, j, At(i, j));
+                        }
+                        else
+                        {
+                            result.At(i, j, 0);
+                        }
                     }
-                    else
-                    {
-                        result.At(i, j, 0);
-                    }
-                }
-            });
+                });
         }
 
         /// <summary>
@@ -567,6 +582,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         /// <param name="rowLength">The number of rows to copy. Must be positive.</param>
         /// <param name="columnIndex">The column to start copying from.</param>
         /// <param name="columnLength">The number of columns to copy. Must be positive.</param>
+        /// <returns>The requested sub-matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException">If: <list><item><paramref name="rowIndex"/> is
         /// negative, or greater than or equal to the number of rows.</item>
         /// <item><paramref name="columnIndex"/> is negative, or greater than or equal to the number 
@@ -591,10 +607,12 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 throw new ArgumentException(Resources.ArgumentMustBePositive, "rowLength");
             }
+
             if (columnLength < 1)
             {
                 throw new ArgumentException(Resources.ArgumentMustBePositive, "columnLength");
             }
+
             int colMax = columnIndex + columnLength;
             int rowMax = rowIndex + rowLength;
 
@@ -623,6 +641,11 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             return result;
         }
 
+        /// <summary>
+        /// Returns an <see cref="IEnumerator{T}"/> that enumerates over the matrix columns.
+        /// </summary>
+        /// <returns>An <see cref="IEnumerator{T}"/> that enumerates over the matrix columns</returns>
+        /// <seealso cref="IEnumerator{T}"/>
         public virtual IEnumerable<KeyValuePair<int, Vector>> ColumnEnumerator()
         {
             for (int i = 0; i < ColumnCount; i++)
@@ -630,6 +653,7 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 yield return new KeyValuePair<int, Vector>(i, GetColumn(i));
             }
         }
+
         /// <summary>
         /// Returns an <see cref="IEnumerator{T}"/> that enumerates the requested matrix columns.
         /// </summary>
@@ -685,14 +709,17 @@ namespace MathNet.Numerics.LinearAlgebra.Double
             {
                 throw new ArgumentOutOfRangeException("index");
             }
+
             if (index + length > RowCount)
             {
                 throw new ArgumentOutOfRangeException("length");
             }
+
             if (length < 1)
             {
                 throw new ArgumentException(Resources.ArgumentMustBePositive, "length");
             }
+
             int maxi = index + length;
             for (int i = index; i < maxi; i++)
             {
@@ -783,9 +810,13 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                     for (int j = 0; j < ColumnCount; j++)
                     {
                         if (i > j)
+                        {
                             result.At(i, j, At(i, j));
+                        }
                         else
+                        {
                             result.At(i, j, 0);
+                        }
                     }
                 });
         }
@@ -815,6 +846,384 @@ namespace MathNet.Numerics.LinearAlgebra.Double
         }
 
         /// <summary>
+        /// Creates a new matrix and inserts the given column at the given index.
+        /// </summary>
+        /// <param name="columnIndex">The index of where to insert the column.</param>
+        /// <param name="column">The column to insert.</param>
+        /// <returns>A new matrix with the inserted column.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="column "/> is <see langword="null" />. </exception>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="columnIndex"/> is &lt; zero or &gt; the number of columns.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="column"/> != the number of rows.</exception>
+        public virtual Matrix InsertColumn(int columnIndex, Vector column)
+        {
+            if (column == null)
+            {
+                throw new ArgumentNullException("column");
+            }
+
+            if (columnIndex < 0 || columnIndex > ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnIndex");
+            }
+
+            if (column.Count != RowCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "rows");
+            }
+
+            Matrix result = CreateMatrix(RowCount, ColumnCount + 1);
+
+            for (int i = 0; i < columnIndex; i++)
+            {
+                result.SetColumn(i, GetColumn(i));
+            }
+
+            result.SetColumn(columnIndex, column);
+            
+            for (int i = columnIndex + 1; i < ColumnCount + 1; i++)
+            {
+                result.SetColumn(i, GetColumn(i - 1));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Copies the values of the given array to the specified column.
+        /// </summary>
+        /// <param name="columnIndex">The column to copy the values to.</param>
+        /// <param name="column">The array to copy the values from.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="column"/> is <see langword="null" />.</exception>        
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="columnIndex"/> is less than zero,
+        /// or greater than or equal to the number of columns.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="column"/> does not
+        /// equal the number of rows of this <strong>Matrix</strong>.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="column"/> does not
+        /// equal the number of rows of this <strong>Matrix</strong>.</exception>
+        public virtual void SetColumn(int columnIndex, double[] column)
+        {
+            if (columnIndex < 0 || columnIndex >= ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnIndex"); 
+            }
+
+            if (column == null)
+            {
+                throw new ArgumentNullException("column");
+            }
+
+            if (column.Length != RowCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "rows");
+            }
+
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    At(i, columnIndex, column[i]);
+                });
+        }
+
+        /// <summary>
+        /// Copies the values of the given <see cref="Vector"/> to the specified column.
+        /// </summary>
+        /// <param name="columnIndex">The column to copy the values to.</param>
+        /// <param name="column">The vector to copy the values from.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="column"/> is <see langword="null" />.</exception>        
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="columnIndex"/> is less than zero,
+        /// or greater than or equal to the number of columns.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="column"/> does not
+        /// equal the number of rows of this <strong>Matrix</strong>.</exception>
+        public virtual void SetColumn(int columnIndex, Vector column)
+        {
+            if (columnIndex < 0 || columnIndex >= ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnIndex");
+            }
+
+            if (column == null)
+            {
+                throw new ArgumentNullException("column");
+            }
+
+            if (column.Count != RowCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "rows");
+            }
+
+            CommonParallel.For(
+                0,
+                RowCount,
+                i =>
+                {
+                    At(i, columnIndex, column[i]);
+                });
+        }
+
+        /// <summary>
+        /// Creates a new matrix and inserts the given row at the given index.
+        /// </summary>
+        /// <param name="rowIndex">The index of where to insert the row.</param>
+        /// <param name="row">The row to insert.</param>
+        /// <returns>A new matrix with the inserted column.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="row"/> is <see langword="null" />. </exception>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="rowIndex"/> is &lt; zero or &gt; the number of rows.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="row"/> != the number of columns.</exception>
+        public virtual Matrix InsertRow(int rowIndex, Vector row)
+        {
+            if (row == null)
+            {
+                throw new ArgumentNullException("row");
+            }
+
+            if (rowIndex < 0 || rowIndex > RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowIndex");
+            }
+
+            if (row.Count != ColumnCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "rows");
+            }
+
+            Matrix result = CreateMatrix(RowCount + 1, ColumnCount);
+
+            for (int i = 0; i < rowIndex; i++)
+            {
+                result.SetRow(i, GetRow(i));                
+            }
+
+            result.SetRow(rowIndex, row);
+
+            for (int i = rowIndex + 1; i < RowCount; i++)
+            {
+                result.SetRow(i, GetRow(i - 1));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Copies the values of the given <see cref="Vector"/> to the specified row.
+        /// </summary>
+        /// <param name="rowIndex">The row to copy the values to.</param>
+        /// <param name="row">The vector to copy the values from.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="row"/> is <see langword="null" />.</exception>            
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="rowIndex"/> is less than zero,
+        /// or greater than or equal to the number of rows.</exception>
+        /// <exception cref="NotConformableException">If the size of <paramref name="row"/> does not
+        /// equal the number of columns of this <strong>Matrix</strong>.</exception>
+        public virtual void SetRow(int rowIndex, Vector row)
+        {
+            if (rowIndex < 0 || rowIndex >= RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowIndex");
+            }
+
+            if (row == null)
+            {
+                throw new ArgumentNullException("row");
+            }
+
+            if (row.Count != ColumnCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "columns");
+            }
+
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                i =>
+                {
+                    At(rowIndex, i, row[i]);
+                });
+        }
+        
+        /// <summary>
+        /// Copies the values of the given array to the specified row.
+        /// </summary>
+        /// <param name="rowIndex">The row to copy the values to.</param>
+        /// <param name="row">The array to copy the values from.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="row"/> is <see langword="null" />.</exception>  
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="rowIndex"/> is less than zero,
+        /// or greater than or equal to the number of rows.</exception>
+        /// <exception cref="ArgumentException">If the size of <paramref name="row"/> does not
+        /// equal the number of columns of this <strong>Matrix</strong>.</exception>
+        public virtual void SetRow(int rowIndex, double[] row)
+        {
+            if (rowIndex < 0 || rowIndex >= RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowIndex");
+            }
+
+            if (row == null)
+            {
+                throw new ArgumentNullException("row");
+            }
+
+            if (row.Length != ColumnCount)
+            {
+                throw new ArgumentException(Resources.ArgumentMatrixSameRowDimension, "columns");
+            }
+
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                i =>
+                {
+                    At(rowIndex, i, row[i]);
+                });
+        }
+
+        /// <summary>
+        /// Copies the values of a given matrix into a region in this matrix.
+        /// </summary>
+        /// <param name="rowIndex">The row to start copying to.</param>
+        /// <param name="rowLength">The number of rows to copy. Must be positive.</param>
+        /// <param name="columnIndex">The column to start copying to.</param>
+        /// <param name="columnLength">The number of columns to copy. Must be positive.</param>
+        /// <param name="subMatrix">The submatrix to copy from.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If: <list><item><paramref name="rowIndex"/> is
+        /// negative, or greater than or equal to the number of rows.</item>
+        /// <item><paramref name="columnIndex"/> is negative, or greater than or equal to the number 
+        /// of columns.</item>
+        /// <item><c>(columnIndex + columnLength) &gt;= Columns</c></item>
+        /// <item><c>(rowIndex + rowLength) &gt;= Rows</c></item></list></exception> 
+        /// <exception cref="ArgumentNullException">If <paramref name="subMatrix"/> is <see langword="null" /></exception>
+        /// <item>the size of <paramref name="subMatrix"/> is not at least <paramref name="rowLength"/> x <paramref name="columnLength"/>.</item>
+        /// <exception cref="ArgumentException">If <paramref name="rowLength"/> or <paramref name="columnLength"/>
+        /// is not positive.</exception>
+        public virtual void SetSubMatrix(int rowIndex, int rowLength, int columnIndex, int columnLength, Matrix subMatrix)
+        {
+            if (rowIndex >= RowCount || rowIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("rowIndex");
+            }
+
+            if (columnIndex >= ColumnCount || columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("columnIndex");
+            }
+
+            if (rowLength < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "rowLength");
+            }
+
+            if (columnLength < 1)
+            {
+                throw new ArgumentException(Resources.ArgumentMustBePositive, "columnLength");
+            }
+
+            if (subMatrix == null)
+            {
+                throw new ArgumentNullException("subMatrix");
+            }
+
+            if (columnLength > subMatrix.ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnLength", "columnLength can be at most the number of columns in subMatrix.");
+            }
+
+            if (rowLength > subMatrix.RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowLength", "rowLength can be at most the number of rows in subMatrix.");
+            }
+
+            int colMax = columnIndex + columnLength;
+            int rowMax = rowIndex + rowLength;
+
+            if (rowMax > RowCount)
+            {
+                throw new ArgumentOutOfRangeException("rowLength");
+            }
+
+            if (colMax > ColumnCount)
+            {
+                throw new ArgumentOutOfRangeException("columnLength");
+            }
+
+            CommonParallel.For(
+                columnIndex,
+                colMax,
+                j =>
+                    {
+                        for (int i = rowIndex, ii = 0; i < rowMax; i++, ii++)
+                        {
+                            At(i, j, subMatrix[ii, j - columnIndex]);
+                        }
+                    });
+        }
+
+        /// <summary>
+        /// Copies the values of the given <see cref="Vector"/> to the diagonal.
+        /// </summary>
+        /// <param name="source">The vector to copy the values from. The length of the vector should be
+        /// Min(Rows, Columns).</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="source"/> is <see langword="null" />.</exception>   
+        /// <exception cref="ArgumentException">If the length of <paramref name="source"/> does not
+        /// equal Min(Rows, Columns).</exception>
+        /// <remarks>For non-square matrices, the elements of <paramref name="source"/> are copied to
+        /// this[i,i].</remarks>
+        public virtual void SetDiagonal(Vector source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            int min = Math.Min(RowCount, ColumnCount);
+
+            if (source.Count != min)
+            {
+                throw new ArgumentException(Resources.ArgumentVectorsSameLength, "source");
+            }
+
+            CommonParallel.For(
+                0,
+                min,
+                i =>
+                {
+                    At(i, i, source[i]);
+                });
+        }
+
+        /// <summary>
+        /// Copies the values of the given array to the diagonal.
+        /// </summary>
+        /// <param name="source">The array to copy the values from. The length of the vector should be
+        /// Min(Rows, Columns).</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="source"/> is <see langword="null" />.</exception>   
+        /// <exception cref="ArgumentException">If the length of <paramref name="source"/> does not
+        /// equal Min(Rows, Columns).</exception>
+        /// <remarks>For non-square matrices, the elements of <paramref name="source"/> are copied to
+        /// this[i,i].</remarks>
+        public virtual void SetDiagonal(double[] source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            int min = Math.Min(RowCount, ColumnCount);
+
+            if (source.Length != min)
+            {
+                throw new ArgumentException(Resources.ArgumentArraysSameLength, "source");
+            }
+
+            CommonParallel.For(
+                0,
+                min,
+                i =>
+                {
+                    At(i, i, source[i]);
+                });
+        }
+
+        /// <summary>
         /// Puts the strictly upper triangle of this matrix into the result matrix.
         /// </summary>
         /// <param name="result">Where to store the lower triangle.</param>
@@ -840,13 +1249,85 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                     for (int j = 0; j < ColumnCount; j++)
                     {
                         if (i < j)
+                        {
                             result.At(i, j, At(i, j));
+                        }
                         else
+                        {
                             result.At(i, j, 0);
+                        }
                     }
                 });
         }
 
+        /// <summary>
+        /// Returns this matrix as a multidimensional array.
+        /// </summary>
+        /// <returns>A multidimensional containing the values of this matrix.</returns>        
+        public virtual double[,] ToArray()
+        {
+            double[,] ret = new double[RowCount, ColumnCount];
+            CommonParallel.For(
+                0,
+                ColumnCount,
+                j =>
+                {
+                    for (int i = 0; i < RowCount; i++)
+                    {
+                        ret[i, j] = At(i, j);
+                    }
+                });
+            return ret;
+        }
+
+        /// <summary>
+        /// Returns the matrix's elements as an array with the data laid out column-wise.
+        /// </summary>
+        /// <example><pre>
+        /// 1, 2, 3
+        /// 4, 5, 6  will be returned as  1, 4, 7, 2, 5, 8, 3, 6, 9
+        /// 7, 8, 9
+        /// </pre></example>
+        /// <returns>An array containing the matrix's elements.</returns>
+        public virtual double[] ToColumnWiseArray()
+        {
+            double[] ret = new double[RowCount * ColumnCount];
+            foreach (KeyValuePair<int, Vector> column in ColumnEnumerator())
+            {
+                int columnIndex = column.Key * RowCount;
+                foreach (KeyValuePair<int, double> element in column.Value.GetIndexedEnumerator())
+                {
+                    ret[columnIndex + element.Key] = element.Value;
+                }
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Returns the matrix's elements as an array with the data laid row-wise.
+        /// </summary>
+        /// <example><pre>
+        /// 1, 2, 3
+        /// 4, 5, 6  will be returned as  1, 2, 3, 4, 5, 6, 7, 8, 9
+        /// 7, 8, 9
+        /// </pre></example>
+        /// <returns>An array containing the matrix's elements.</returns>
+        public virtual double[] ToRowWiseArray()
+        {
+            double[] ret = new double[RowCount * ColumnCount];
+
+            foreach (KeyValuePair<int, Vector> row in RowEnumerator())
+            {
+                int rowIndex = row.Key * ColumnCount;
+                foreach (KeyValuePair<int, double> element in row.Value.GetIndexedEnumerator())
+                {
+                    ret[rowIndex + element.Key] = element.Value;
+                }
+            }
+
+            return ret;
+        }
 
         #region Implemented Interfaces
 

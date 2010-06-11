@@ -702,7 +702,7 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
         [Row("Tall3x2")]
         [Row("Wide2x3")]
         [MultipleAsserts]
-        public void UpperrTriangleResult(string name)
+        public void UpperTriangleResult(string name)
         {
             Matrix data = testMatrices[name];
             Matrix result = CreateMatrix(data.RowCount, data.ColumnCount);
@@ -927,6 +927,432 @@ namespace MathNet.Numerics.UnitTests.LinearAlgebraTests.Double
                 }
             }
         }
+
+        [Test]
+        [Row("Singular3x3", new double[] { 1, 2, 3})]
+        [Row("Square3x3", new double[] { 1, 2, 3 })]
+        [Row("Tall3x2", new double[] { 1, 2, 3 })]
+        [Row("Wide2x3", new double[] {1,2})]
+        [Row("Singular3x3", null,ExpectedException = typeof(ArgumentNullException))]
+        [Row("Singular3x3", new double[] { 1, 2, 3, 4, 5 }, ExpectedException = typeof(ArgumentException))]
+        public void SetColumnWithArray(string name, double[] column)
+        {
+            Matrix matrix = testMatrices[name];
+            for (int i = 0; i < matrix.ColumnCount; i++)
+            {
+                matrix.SetColumn(i, column);
+                for (int j = 0; j < matrix.RowCount; j++)
+                {
+                    Assert.AreEqual(matrix[j, i], column[j]);
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetColumnArrayWithInvalidColumnIndexShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            double[] column = { 1, 2, 3 };
+            matrix.SetColumn(-1, column);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetColumnArrayWithInvalidColumnIndexShouldThrowException2()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            double[] column = { 1, 2, 3 };
+            matrix.SetColumn(matrix.ColumnCount + 1, column);
+        }
+
+        [Test]
+        [Row("Singular3x3", new double[] { 1, 2, 3 })]
+        [Row("Square3x3", new double[] { 1, 2, 3 })]
+        [Row("Tall3x2", new double[] { 1, 2, 3 })]
+        [Row("Wide2x3", new double[] { 1, 2 })]
+        [Row("Singular3x3", new double[] { 1, 2, 3, 4, 5 }, ExpectedException = typeof(ArgumentException))]
+        public void SetColumnWithVector(string name, double[] column)
+        {
+            Matrix matrix = testMatrices[name];
+            Vector columnVector = CreateVector(column);
+            for (int i = 0; i < matrix.ColumnCount; i++)
+            {
+                matrix.SetColumn(i, column);
+                for (int j = 0; j < matrix.RowCount; j++)
+                {
+                    Assert.AreEqual(matrix[j, i], columnVector[j]);
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void SetColumnWithNullVectorShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector columnVector = null;
+            matrix.SetColumn(1,columnVector);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetColumnVectorWithInvalidColumnIndexShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector column = CreateVector(new double[] { 1, 2, 3 });
+            matrix.SetColumn(-1, column);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetColumnVectorWithInvalidColumnIndexShouldThrowException2()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector column = CreateVector(new double[] { 1, 2, 3 });
+            matrix.SetColumn(matrix.ColumnCount + 1, column);
+        }
+
+        [Test]
+        public void InsertColumn()
+        {
+            Matrix matrix = CreateMatrix(3,3);
+            Vector column = CreateVector(matrix.RowCount);
+            for (int i = 0; i < column.Count; i++)
+            {
+                column[i] = i;
+            }
+
+            for (int k = 0; k < matrix.ColumnCount + 1; k++)
+            {
+                Matrix result = matrix.InsertColumn(k, column);
+                Assert.AreEqual(result.ColumnCount, matrix.ColumnCount + 1);
+                for (int col = 0; col < result.ColumnCount; col++)
+                {
+                    for (int row = 0; row < result.RowCount; row++)
+                    {
+                        if (col == k)
+                        {
+                            Assert.AreEqual(row, result[row, col]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, result[row, col]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void InsertNullColumnShouldThrowExecption()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            matrix.InsertColumn(0, null);
+        }
+
+        [Test]
+        [Row(-1,ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(5, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        public void InsertColumnWithInvalidColumnIndexShouldThrowExceptiopn(int columnIndex)
+        {
+            Matrix matrix = CreateMatrix(3, 3);
+            Vector column = CreateVector(matrix.RowCount);
+            matrix.InsertColumn(columnIndex, column);  
+        }
+
+        public void InsertColumnWithInvalidNumberOfElementsShouldThrowException()
+        {
+            Matrix matrix = CreateMatrix(3, 3);
+            Vector column = CreateVector(matrix.RowCount + 1);
+            matrix.InsertColumn(0, column);
+        }
+
+        [Test]
+        [Row("Singular3x3", new double[] { 1, 2, 3 })]
+        [Row("Square3x3", new double[] { 1, 2, 3 })]
+        [Row("Tall3x2", new double[] { 1, 2 })]
+        [Row("Wide2x3", new double[] { 1, 2, 3 })]
+        [Row("Singular3x3", null, ExpectedException = typeof(ArgumentNullException))]
+        [Row("Singular3x3", new double[] { 1, 2, 3, 4, 5 }, ExpectedException = typeof(ArgumentException))]
+        public void SetRowWithArray(string name, double[] row)
+        {
+            Matrix matrix = testMatrices[name];
+            for (int i = 0; i < matrix.RowCount; i++)
+            {
+                matrix.SetRow(i, row);
+                for (int j = 0; j < matrix.ColumnCount; j++)
+                {
+                    Assert.AreEqual(matrix[i, j], row[j]);
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetRowArrayWithInvalidRowIndexShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            double[] row = { 1, 2, 3 };
+            matrix.SetRow(-1, row);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetRowArrayWithInvalidRowIndexShouldThrowException2()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            double[] row = { 1, 2, 3 };
+            matrix.SetRow(matrix.RowCount + 1, row);
+        }
+
+        [Test]
+        [Row("Singular3x3", new double[] { 1, 2, 3 })]
+        [Row("Square3x3", new double[] { 1, 2, 3 })]
+        [Row("Tall3x2", new double[] { 1, 2})]
+        [Row("Wide2x3", new double[] { 1, 2 ,3 })]
+        [Row("Singular3x3", new double[] { 1, 2, 3, 4, 5 }, ExpectedException = typeof(ArgumentException))]
+        public void SetRowWithVector(string name, double[] row)
+        {
+            Matrix matrix = testMatrices[name];
+            Vector rowVector = CreateVector(row);
+            for (int i = 0; i < matrix.RowCount; i++)
+            {
+                matrix.SetRow(i, row);
+                for (int j = 0; j < matrix.ColumnCount; j++)
+                {
+                    Assert.AreEqual(matrix[i, j], rowVector[j]);
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void SetRowWithNullVectorShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector rowVector = null;
+            matrix.SetRow(1, rowVector);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetRowVectorWithInvalidRowIndexShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector row = CreateVector(new double[] { 1, 2, 3 });
+            matrix.SetRow(-1, row);
+        }
+
+        [Test]
+        [ExpectedArgumentOutOfRangeException]
+        public void SetRowVectorWithInvalidRowIndexShouldThrowException2()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector row = CreateVector(new double[] { 1, 2, 3 });
+            matrix.SetRow(matrix.RowCount + 1, row);
+        }
+
+        [Test]
+        [Row(0, 2, 0, 2)]
+        [Row(1, 1, 1, 1)]
+        [Row(0, 4, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, 0, 4, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(4, 2, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, 4, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(-1, 2, 0, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, 2, -1, 2, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(0, -1, 0, 2, ExpectedException = typeof(ArgumentException))]
+        [Row(0, 2, 0, -1, ExpectedException = typeof(ArgumentException))]
+        public void SetSubMatrix(int rowStart, int rowLength, int colStart, int colLength)
+        {
+            foreach (Matrix matrix in testMatrices.Values)
+            {
+                Matrix subMatrix = matrix.SubMatrix(0, 2, 0, 2);
+                subMatrix[0, 0] = 10.0;
+                subMatrix[0, 1] = -1.0;
+                subMatrix[1, 0] = 3.0;
+                subMatrix[1, 1] = 4.0;
+                matrix.SetSubMatrix(rowStart, rowLength, colStart, colLength, subMatrix);
+
+                for (int i = rowStart, ii = 0; i < rowLength; i++, ii++)
+                {
+                    for (int j = colStart, jj = 0; j < colLength; j++, jj++)
+                    {
+                        Assert.AreEqual(matrix[i, j], subMatrix[ii, jj]);
+                    }
+                }
+            }
+        }
+       
+        [Test]
+        [ExpectedArgumentNullException]
+        public void SetSubMatrixWithNullSubMatrixShouldThrowException()
+        {
+            Matrix data = testMatrices["Square3x3"];
+            Matrix subMatrix = null;
+            data.SetSubMatrix(0, 2, 0, 2, subMatrix);
+        }
+
+        [Test]
+        [Row("Square3x3", new double[]{1,2,3})]
+        [Row("Wide2x3", new double[]{1,2})]
+        [Row("Wide2x3", new double[]{1,2,3}, ExpectedException = typeof(ArgumentException))]
+        [Row("Tall3x2", new double[]{1,2})]
+        public void SetDiagonalVector(string name, double[] diagonal)
+        {
+            Matrix matrix = testMatrices[name];
+            Vector vector = CreateVector(diagonal);
+            matrix.SetDiagonal(vector);
+
+            int min = Math.Min(matrix.ColumnCount, matrix.RowCount);
+            Assert.AreEqual(diagonal.Length, min);
+            
+            for (int i = 0; i < vector.Count; i++)
+            {
+                Assert.AreEqual(vector[i], matrix[i, i]);
+            }
+        }
+
+        [Test]
+        [ExpectedArgumentNullException]
+        public void SetDiagonalWithNullVectorParameterShouldThrowException()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            Vector vector = null;
+            matrix.SetDiagonal(vector);
+        }
+
+        [Test]
+        [Row("Square3x3", new double[] { 1, 2, 3 })]
+        [Row("Wide2x3", new double[] { 1, 2 })]
+        [Row("Wide2x3", new double[] { 1, 2, 3 }, ExpectedException = typeof(ArgumentException))]
+        [Row("Tall3x2", new double[] { 1, 2 })]
+        [Row("Square3x3", null, ExpectedException = typeof(ArgumentNullException))]
+        public void SetDiagonalArray(string name, double[] diagonal)
+        {
+            Matrix matrix = testMatrices[name];
+            matrix.SetDiagonal(diagonal);
+            int min = Math.Min(matrix.ColumnCount, matrix.RowCount);
+            Assert.AreEqual(diagonal.Length, min);
+            for (int i = 0; i < diagonal.Length; i++)
+            {
+                Assert.AreEqual(diagonal[i], matrix[i, i]);
+            }
+        }
+
+        [Test]
+        public void InsertRow()
+        {
+            Matrix matrix = CreateMatrix(3,3);
+            Vector row = CreateVector(matrix.ColumnCount);
+            for (int i = 0; i < row.Count; i++)
+            {
+                row[i] = i;
+            }
+
+            for (int insertedRowIndex = 0; insertedRowIndex < matrix.RowCount + 1; insertedRowIndex++)
+            {
+                Matrix result = matrix.InsertRow(insertedRowIndex, row);
+                Assert.AreEqual(result.RowCount, matrix.ColumnCount + 1);
+                for (int i = 0; i < result.RowCount; i++)
+                {
+                    for (int j = 0; j < result.ColumnCount; j++)
+                    {
+                        if (i == insertedRowIndex)
+                        {
+                            Assert.AreEqual(row[j], result[i, j]);
+                        }
+                        else
+                        {
+                            Assert.AreEqual(0, result[i, j]);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void InsertNullRowShouldThrowExecption()
+        {
+            Matrix matrix = testMatrices["Square3x3"];
+            matrix.InsertRow(0, null);
+        }
+
+        [Test]
+        [Row(-1,ExpectedException = typeof(ArgumentOutOfRangeException))]
+        [Row(5, ExpectedException = typeof(ArgumentOutOfRangeException))]
+        public void InsertRowWithInvalidRowIndexShouldThrowExceptiopn(int rowIndex)
+        {
+            Matrix matrix = CreateMatrix(3, 3);
+            Vector row = CreateVector(matrix.ColumnCount);
+            matrix.InsertRow(rowIndex, row);  
+        }
+
+        public void InsertRowWithInvalidNumberOfElementsShouldThrowException()
+        {
+            Matrix matrix = CreateMatrix(3, 3);
+            Vector row = CreateVector(matrix.ColumnCount+ 1);
+            matrix.InsertRow(0, row);
+        }
+
+        [Test]
+        public void ToArray()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                double[,] array = data.ToArray();
+                Assert.AreEqual(data.RowCount, array.GetLength(0));
+                Assert.AreEqual(data.ColumnCount, array.GetLength(1));
+
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j], array[i, j]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ToColumnWiseArray()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                double[] array = data.ToColumnWiseArray();
+                Assert.AreEqual(data.RowCount * data.ColumnCount, array.Length);
+
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j], array[j * data.RowCount + i]);
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ToRowWiseArray()
+        {
+            foreach (Matrix data in testMatrices.Values)
+            {
+                double[] array = data.ToRowWiseArray();
+                Assert.AreEqual(data.RowCount * data.ColumnCount, array.Length);
+
+                for (int i = 0; i < data.RowCount; i++)
+                {
+                    for (int j = 0; j < data.ColumnCount; j++)
+                    {
+                        Assert.AreEqual(data[i, j], array[i * data.ColumnCount + j]);
+                    }
+                }
+            }
+        }
+
 
         [Test]
         [Row("Singular3x3")]
