@@ -1003,20 +1003,26 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 {
                     CommonParallel.For(
                        0,
-                       this.RowCount,
-                       i =>
+                       this.ColumnCount,
+                       j =>
                        {
-                           CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
+                           for (int i = 0; i < this.RowCount; i++)
+                           {
+                               result.At(i, j, At(i, j));
+                           }
                        });
                 },
                 () =>
                 {
                     CommonParallel.For(
                        0,
-                       right.RowCount,
-                       i =>
+                       right.ColumnCount,
+                       j =>
                        {
-                           CommonParallel.For(0, right.ColumnCount, j => result.At(i, j + ColumnCount, right.At(i, j)));
+                           for (int i = 0; i < right.RowCount; i++)
+                           {
+                               result.At(i, j + ColumnCount, right.At(i, j));
+                           }
                        });                    
                });
         }
@@ -1079,20 +1085,26 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 {
                     CommonParallel.For(
                         0,
-                        this.RowCount,
-                        i =>
+                        this.ColumnCount,
+                        j =>
                         {
-                            CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
+                            for (int i = 0; i < this.RowCount; i++)
+                            {
+                                result.At(i, j, At(i, j));
+                            }
                         });
                 },
                 () =>
                 {
                     CommonParallel.For(
                         0,
-                        lower.RowCount,
-                        i =>
+                        lower.ColumnCount,
+                        j =>
                         {
-                            CommonParallel.For(0, lower.ColumnCount, j => result.At(i + RowCount, j, lower.At(i, j)));
+                            for (int i = 0; i < lower.RowCount; i++)
+                            {
+                                result.At(i + RowCount, j, lower.At(i, j));                                
+                            }
                         });
                 });
         }
@@ -1168,20 +1180,26 @@ namespace MathNet.Numerics.LinearAlgebra.Double
                 {
                     CommonParallel.For(
                         0,
-                        this.RowCount,
-                        i =>
+                        this.ColumnCount,
+                        j =>
                         {
-                            CommonParallel.For(0, this.ColumnCount, j => result.At(i, j, At(i, j)));
+                            for (int i = 0; i < this.RowCount; i++)
+                            {
+                                result.At(i, j, At(i, j));
+                            }
                         });
                 },               
                 () =>
                 {
                     CommonParallel.For(
                         0,
-                        lower.RowCount,
-                        i =>
+                        lower.ColumnCount,
+                        j =>
                         {
-                            CommonParallel.For(0, lower.ColumnCount, j => result.At(i + RowCount, j + ColumnCount, lower.At(i, j)));
+                            for (int i = 0; i < lower.RowCount; i++)
+                            {
+                                result.At(i + RowCount, j + ColumnCount, lower.At(i, j));
+                            }
                         });
                 });
         }
